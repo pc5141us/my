@@ -1,12 +1,12 @@
 const { Telegraf } = require('telegraf');
 const { google } = require('googleapis');
 
-// --- حط بياناتك هنا مباشرة ---
+// --- بياناتك المحفوظة ---
 const BOT_TOKEN = '8402726492:AAGLLp8_8wjBBUSA175XB2pM83xty2DmgCU';
 const SPREADSHEET_ID = '10CH91sRewtZGXkdu1EOosSnDfj8N9-Uu2Nf65L5U9lw';
-const OWNER_ID = ''; // اختياري: حط رقم الأيدي بتاعك هنا
+const OWNER_ID = '682572594';
 
-// حط محتوى ملف الـ JSON بتاع جوجل هنا (بين علامتين الاقتباس ` `)
+// حط محتوى ملف الـ JSON بتاع جوجل هنا
 const GOOGLE_JSON = `
 {
   "كنسخ": "محتوى ملف الـ JSON هنا بالكامل"
@@ -27,8 +27,7 @@ const getSheetsClient = () => {
   return google.sheets({ version: 'v4', auth });
 };
 
-bot.command('my_id', (ctx) => ctx.reply(`الأيدي بتاعك هو: ${ctx.from.id}`));
-
+// حماية البوت
 bot.use(async (ctx, next) => {
   if (OWNER_ID && ctx.from.id.toString() !== OWNER_ID) {
     return ctx.reply('عذراً، هذا البوت مخصص للمالك فقط.');
@@ -36,34 +35,73 @@ bot.use(async (ctx, next) => {
   return next();
 });
 
-const updateValue = async (ctx, range, value) => {
-  try {
-    const sheets = getSheetsClient();
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range,
-      valueInputOption: 'USER_ENTERED',
-      resource: { values: [[value]] },
-    });
-    ctx.reply('✅ تم التحديث في جوجل شيت!');
-  } catch (error) {
-    console.error(error);
-    ctx.reply('❌ فشل التحديث: ' + error.message);
+// الأزرار
+const mainKeyboard = {
+  reply_markup: {
+    keyboard: [
+      [{ text: '👤 تعديل الاسم' }, { text: '📝 تعديل الوصف' }],
+      [{ text: '🌐 روابط السوشيال ميديا' }]
+    ],
+    resize_keyboard: true
+  }
+};
+
+const linksKeyboard = {
+  reply_markup: {
+    keyboard: [
+      [{ text: '🔵 فيسبوك' }, { text: '🟢 واتساب' }],
+      [{ text: '🟣 إنستجرام' }, { text: '🔵 تليجرام' }],
+      [{ text: '⬅️ الرجوع للقائمة الرئيسية' }]
+    ],
+    resize_keyboard: true
   }
 };
 
 bot.start((ctx) => {
-  ctx.reply('أهلاً بك يا حمدي! \n\nاستخدم الأوامر: /name, /bio, /fb, /wa, /ig, /tg');
+  return ctx.reply('أهلاً بك يا حمدي! اختر ماذا تريد أن تعدل:', mainKeyboard);
 });
 
-bot.on('text', async (ctx) => {
-  const text = ctx.message.text;
-  if (text.startsWith('/name ')) return updateValue(ctx, 'Sheet1!B1', text.replace('/name ', ''));
-  if (text.startsWith('/bio ')) return updateValue(ctx, 'Sheet1!B2', text.replace('/bio ', ''));
-  if (text.startsWith('/fb ')) return updateValue(ctx, 'Sheet1!B3', text.replace('/fb ', ''));
-  if (text.startsWith('/wa ')) return updateValue(ctx, 'Sheet1!B4', text.replace('/wa ', ''));
-  if (text.startsWith('/ig ')) return updateValue(ctx, 'Sheet1!B5', text.replace('/ig ', ''));
-  if (text.startsWith('/tg ')) return updateValue(ctx, 'Sheet1!B6', text.replace('/tg ', ''));
+bot.hears('⬅️ الرجوع للقائمة الرئيسية', (ctx) => {
+  return ctx.reply('الرئيسية', mainKeyboard);
+});
+
+bot.hears('🌐 روابط السوشيال ميديا', (ctx) => {
+  return ctx.reply('اختر الرابط:', linksKeyboard);
+});
+
+bot.hears('👤 تعديل الاسم', (ctx) => ctx.reply('أرسل الاسم الجديد الآن:', { reply_markup: { force_reply: true } }));
+bot.hears('📝 تعديل الوصف', (ctx) => ctx.reply('أرسل الوصف الجديد الآن:', { reply_markup: { force_reply: true } }));
+bot.hears('🔵 فيسبوك', (ctx) => ctx.reply('أرسل رابط فيسبوك الجديد:', { reply_markup: { force_reply: true } }));
+bot.hears('🟢 واتساب', (ctx) => ctx.reply('أرسل رابط واتساب الجديد:', { reply_markup: { force_reply: true } }));
+bot.hears('🟣 إنستجرام', (ctx) => ctx.reply('أرسل رابط إنستجرام الجديد:', { reply_markup: { force_reply: true } }));
+bot.hears('🔵 تليجرام', (ctx) => ctx.reply('أرسل رابط تليجرام الجديد:', { reply_markup: { force_reply: true } }));
+
+bot.on('message', async (ctx) => {
+  if (ctx.message.reply_to_message) {
+    const replyText = ctx.message.reply_to_message.text;
+    let range = '';
+    if (replyText.includes('الاسم')) range = 'Sheet1!B1';
+    else if (replyText.includes('الوصف')) range = 'Sheet1!B2';
+    else if (replyText.includes('فيسبوك')) range = 'Sheet1!B3';
+    else if (replyText.includes('واتساب')) range = 'Sheet1!B4';
+    else if (replyText.includes('إنستجرام')) range = 'Sheet1!B5';
+    else if (replyText.includes('تليجرام')) range = 'Sheet1!B6';
+
+    if (range) {
+      try {
+        const sheets = getSheetsClient();
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: SPREADSHEET_ID,
+          range,
+          valueInputOption: 'USER_ENTERED',
+          resource: { values: [[ctx.message.text]] },
+        });
+        return ctx.reply('✅ تم التحديث بنجاح!', mainKeyboard);
+      } catch (error) {
+        return ctx.reply('❌ خطأ: ' + error.message);
+      }
+    }
+  }
 });
 
 module.exports = async (req, res) => {
