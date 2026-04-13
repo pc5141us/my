@@ -58,17 +58,22 @@ bot.start(async (ctx) => {
   const firstName = ctx.from.first_name;
   const username = ctx.from.username || 'لا يوجد';
   
-  // حفظ المستخدم في جوجل شيت تلقائياً
+  let isNew = false;
+  // حفظ المستخدم والتحقق إذا كان جديداً
   try {
     const saveUrl = `${SCRIPT_URL}?action=registerUser&id=${userId}&name=${encodeURIComponent(firstName)}&username=${encodeURIComponent(username)}`;
-    fetch(saveUrl).catch(e => console.log("Save user error:", e.message));
-  } catch (e) {}
+    const response = await fetch(saveUrl);
+    const result = await response.text();
+    if (result === "New") isNew = true;
+  } catch (e) { console.log("Save user error:", e.message); }
 
   if (userId === OWNER_ID) {
     return ctx.reply('أهلاً بك يا حمدي! أنت المالك، يمكنك التحكم في الموقع والمستخدمين من هنا:', adminKeyboard);
   } else {
-    // إشعار للمالك بدخول شخص جديد
-    await bot.telegram.sendMessage(OWNER_ID, `🔔 مستخدم جديد دخل البوت:\nالاسم: ${firstName}\nالمعرف: \`${userId}\` (اضغط للنسخ)\nاليوزر: @${username}`);
+    // إرسال إشعار للمالك فقط إذا كان المستخدم جديداً لأول مرة
+    if (isNew) {
+      await bot.telegram.sendMessage(OWNER_ID, `🔔 مستخدم جديد دخل البوت لأول مرة:\nالاسم: ${firstName}\nالمعرف: \`${userId}\` (اضغط للنسخ)\nاليوزر: @${username}`);
+    }
     
     return ctx.reply(`أهلاً بك يا ${firstName}! يمكنك إرسال رسالتك هنا وسأقوم بالرد عليك في أقرب وقت.`);
   }
@@ -83,21 +88,79 @@ bot.hears('📢 إدارة المستخدمين', (ctx) => {
 bot.hears('👥 قائمة المستخدمين', async (ctx) => {
   if (ctx.from.id.toString() !== OWNER_ID) return;
   try {
-    ctx.reply('⏳ جاري جلب القائمة من جوجل شيت...');
+    const statusMsg = await ctx.reply('⏳ جاري جلب القائمة من جوجل شيت...');
     const response = await fetch(`${SCRIPT_URL}?action=getUsers`);
     const users = await response.json();
     
     if (!users || users.length === 0) return ctx.reply('📭 لا يوجد مستخدمين مسجلين بعد.');
     
-    let message = '👥 قائمة المستخدمين المسجلين:\n\n';
-    users.forEach((u, index) => {
-      message += `${index + 1}- ${u.name} (@${u.username})\nID: \`${u.id}\` \n\n`;
+    // إنشاء أزرار بأسماء المستخدمين
+    const buttons = users.map(u => ([{
+      text: `👤 ${u.name} (@${u.username})`,
+      callback_data: `manage_${u.id}`
+    }]));
+
+    await bot.telegram.deleteMessage(ctx.chat.id, statusMsg.message_id);
+    ctx.reply('👥 اختر مستخدماً للتحكم به:', {
+      reply_markup: { inline_keyboard: buttons }
     });
-    
-    ctx.reply(message, { parse_mode: 'Markdown' });
   } catch (e) {
-    ctx.reply('❌ فشل جلب القائمة. تأكد من تحديث كود Apps Script.');
+    ctx.reply('❌ فشل جلب القائمة.');
   }
+});
+
+// التعامل مع الضغط على اسم المستخدم
+bot.action(/manage_(.+)/, async (ctx) => {
+  const targetId = ctx.match[1];
+  const isBanned = bannedUsers.has(targetId);
+  
+  const keyboard = [
+    [{ text: '💬 إرسال رسالة خاصة', callback_data: `msg_${targetId}` }],
+    [{ 
+      text: isBanned ? '✅ فك الحظر' : '🚫 حظر المستخدم', 
+      callback_data: isBanned ? `unban_${targetId}` : `ban_${targetId}` 
+    }],
+    [{ text: '⬅️ العودة للقائمة', callback_data: 'back_to_list' }]
+  ];
+
+  await ctx.editMessageText(`🛠️ إدارة المستخدم (ID: ${targetId}):\nالحالة الحالية: ${isBanned ? '🔴 محظور' : '🟢 نشط'}`, {
+    reply_markup: { inline_keyboard: keyboard }
+  });
+});
+
+// تنفيذ الحظر من الأزرار
+bot.action(/ban_(.+)/, async (ctx) => {
+  const targetId = ctx.match[1];
+  bannedUsers.add(targetId);
+  await ctx.answerCbQuery('✅ تم الحظر');
+  return ctx.editMessageText(`🚫 تم حظر المستخدم ${targetId} بنجاح.`, {
+    reply_markup: { inline_keyboard: [[{ text: '⬅️ عودة', callback_data: `manage_${targetId}` }]] }
+  });
+});
+
+// تنفيذ فك الحظر من الأزرار
+bot.action(/unban_(.+)/, async (ctx) => {
+  const targetId = ctx.match[1];
+  bannedUsers.delete(targetId);
+  await ctx.answerCbQuery('✅ تم فك الحظر');
+  return ctx.editMessageText(`🟢 تم فك الحظر عن المستخدم ${targetId}.`, {
+    reply_markup: { inline_keyboard: [[{ text: '⬅️ عودة', callback_data: `manage_${targetId}` }]] }
+  });
+});
+
+// طلب إرسال رسالة خاصة
+bot.action(/msg_(.+)/, async (ctx) => {
+  const targetId = ctx.match[1];
+  await ctx.answerCbQuery();
+  ctx.reply(`📝 اكتب رسالتك الآن لإرسالها للمستخدم (ID: ${targetId}):\n\n*(سيتم إرسال كل ما تكتبه في الرسالة القادمة)*`, {
+    reply_markup: { force_reply: true }
+  });
+});
+
+// العودة للقائمة
+bot.action('back_to_list', async (ctx) => {
+  await ctx.answerCbQuery();
+  return ctx.reply('👥 قائمة المستخدمين:', { reply_markup: { keyboard: usersManagementKeyboard.reply_markup.keyboard, resize_keyboard: true } });
 });
 
 // نصوص الرسائل الإدارية
@@ -170,6 +233,16 @@ bot.on('message', async (ctx) => {
     if (ctx.message.reply_to_message) {
       const replyToText = ctx.message.reply_to_message.text || '';
       
+      // التعامل مع الرسائل الخاصة لفرد معين (من القائمة)
+      const individualMsgMatch = replyToText.match(/ID: (\d+)\)/);
+      if (individualMsgMatch && replyToText.includes('اكتب رسالتك الآن')) {
+        const targetId = individualMsgMatch[1];
+        try {
+          await bot.telegram.sendMessage(targetId, `💬 رسالة خاصة من حمدي:\n\n${messageText}`);
+          return ctx.reply('✅ تم إرسال رسالتك الخاصة بنجاح.');
+        } catch (e) { return ctx.reply('❌ فشل الإرسال للمستخدم.'); }
+      }
+
       // التعامل مع الإرسال الجماعي
       if (replyToText === PROMPT_BROADCAST) {
         try {
@@ -182,13 +255,13 @@ bot.on('message', async (ctx) => {
             try {
               await bot.telegram.sendMessage(user.id, `📢 رسالة من الإدارة:\n\n${messageText}`);
               count++;
-            } catch (err) {} // يتخطى من حظر البوت
+            } catch (err) {} 
           }
           return ctx.reply(`✅ تم إرسال الرسالة بنجاح إلى ${count} مستخدم.`);
         } catch (e) { return ctx.reply('❌ فشل الإرسال الجماعي.'); }
       }
 
-      // التعامل مع الحظر وفك الحظر
+      // التعامل مع الحظر وفك الحظر النصي
       if (replyToText === PROMPT_BAN) {
         bannedUsers.add(messageText.trim());
         return ctx.reply(`✅ تم حظر المستخدم ${messageText} بنجاح.`, usersManagementKeyboard);
@@ -217,7 +290,7 @@ bot.on('message', async (ctx) => {
         } catch (e) { return ctx.reply('❌ خطأ اتصال: ' + e.message); }
       }
 
-      // الرد على رسائل المستخدمين (التواصل)
+      // الرد على رسائل المستخدمين (التواصل التلقائي)
       const match = replyToText.match(/\(ID: (\d+)\)/);
       if (match) {
         const targetUserId = match[1];
