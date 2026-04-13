@@ -123,12 +123,16 @@ bot.hears('👥 قائمة المستخدمين', async (ctx) => {
   } catch (e) { ctx.reply('❌ فشل جلب القائمة.'); }
 });
 
-// رصد اختيار مستخدم
+// رصد اختيار مستخدم من القائمة
 bot.hears(/^👤 (.+) \((\d+)\)$/, (ctx) => {
   if (ctx.from.id.toString() !== OWNER_ID) return;
+  const name = ctx.match[1];
   const id = ctx.match[2];
   const isBanned = bannedUsers.has(id);
-  ctx.reply(`🛠️ التحكم في المستخدم (ID: ${id})\nالحالة: ${isBanned ? '🔴 محظور' : '🟢 نشط'}`, getUserControlKeyboard(id));
+  
+  ctx.reply(`🛠️ إدارة المستخدم: ${name}\nID: ${id}\nالحالة: ${isBanned ? '🔴 محظور' : '🟢 نشط'}`, {
+    reply_markup: getUserControlKeyboard(id)
+  });
 });
 
 bot.hears(/^🚫 حظر \((\d+)\)$/, (ctx) => {
@@ -182,12 +186,16 @@ bot.on('message', async (ctx) => {
       const replyToText = ctx.message.reply_to_message.text || '';
       
       // 1. مراسلة خاصة
-      const individualMatch = replyToText.match(/ID: (\d+)\)/);
+      const individualMatch = replyToText.match(/ID: (\d+)\)|إدارة المستخدم: (.+)\n/);
       if (individualMatch && (replyToText.includes('اكتب رسالتك') || replyToText.includes('رسالة من:'))) {
-        const targetId = individualMatch[1];
+        const targetId = replyToText.match(/ID: (\d+)\)/)[1];
+        const targetName = replyToText.match(/المستخدم: (.+)\n/) ? replyToText.match(/المستخدم: (.+)\n/)[1] : targetId;
+        
         try {
           await bot.telegram.sendMessage(targetId, `💬 رسالة من حمدي:\n\n${messageText}`);
-          return ctx.reply(`✅ تم الإرسال للمستخدم (${targetId})`);
+          return ctx.reply(`✅ تم الإرسال للمستخدم: ${targetName}`, {
+            reply_markup: getUserControlKeyboard(targetId)
+          });
         } catch (e) { return ctx.reply('❌ فشل الإرسال.'); }
       }
 
