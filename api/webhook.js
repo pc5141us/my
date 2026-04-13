@@ -49,24 +49,33 @@ bot.hears('🌐 روابط السوشيال ميديا', (ctx) => {
   return ctx.reply('اختر الرابط:', linksKeyboard);
 });
 
-bot.hears('👤 تعديل الاسم', (ctx) => ctx.reply('أرسل الاسم الجديد الآن:', { reply_markup: { force_reply: true } }));
-bot.hears('📝 تعديل الوصف', (ctx) => ctx.reply('أرسل الوصف الجديد الآن:', { reply_markup: { force_reply: true } }));
-bot.hears('🔵 فيسبوك', (ctx) => ctx.reply('أرسل رابط فيسبوك الجديد:', { reply_markup: { force_reply: true } }));
-bot.hears('🟢 واتساب', (ctx) => ctx.reply('أرسل رابط واتساب الجديد:', { reply_markup: { force_reply: true } }));
-bot.hears('🟣 إنستجرام', (ctx) => ctx.reply('أرسل رابط إنستجرام الجديد:', { reply_markup: { force_reply: true } }));
-bot.hears('🔵 تليجرام', (ctx) => ctx.reply('أرسل رابط تليجرام الجديد:', { reply_markup: { force_reply: true } }));
+// نصوص الرسائل التي يرد بها البوت (سنستخدمها للتعرف على نوع التعديل)
+const PROMPT_NAME = 'أرسل الاسم الجديد الآن:';
+const PROMPT_BIO = 'أرسل الوصف الجديد الآن:';
+const PROMPT_FB = 'أرسل رابط فيسبوك الجديد:';
+const PROMPT_WA = 'أرسل رابط واتساب الجديد:';
+const PROMPT_IG = 'أرسل رابط إنستجرام الجديد:';
+const PROMPT_TG = 'أرسل رابط تليجرام الجديد:';
+
+bot.hears('👤 تعديل الاسم', (ctx) => ctx.reply(PROMPT_NAME, { reply_markup: { force_reply: true } }));
+bot.hears('📝 تعديل الوصف', (ctx) => ctx.reply(PROMPT_BIO, { reply_markup: { force_reply: true } }));
+bot.hears('🔵 فيسبوك', (ctx) => ctx.reply(PROMPT_FB, { reply_markup: { force_reply: true } }));
+bot.hears('🟢 واتساب', (ctx) => ctx.reply(PROMPT_WA, { reply_markup: { force_reply: true } }));
+bot.hears('🟣 إنستجرام', (ctx) => ctx.reply(PROMPT_IG, { reply_markup: { force_reply: true } }));
+bot.hears('🔵 تليجرام', (ctx) => ctx.reply(PROMPT_TG, { reply_markup: { force_reply: true } }));
 
 bot.on('message', async (ctx) => {
   if (ctx.message.reply_to_message) {
     const replyText = ctx.message.reply_to_message.text;
     let range = '';
     
-    if (replyText.includes('الاسم')) range = 'B1';
-    else if (replyText.includes('الوصف')) range = 'B2';
-    else if (replyText.includes('فيسبوك')) range = 'B3';
-    else if (replyText.includes('واتساب')) range = 'B4';
-    else if (replyText.includes('إنستجرام')) range = 'B5';
-    else if (replyText.includes('تليجرام')) range = 'B6';
+    // تحديد الخلية بناءً على نص رسالة البوت الأصلية بدقة
+    if (replyText === PROMPT_NAME) range = 'B1';
+    else if (replyText === PROMPT_BIO) range = 'B2';
+    else if (replyText === PROMPT_FB) range = 'B3';
+    else if (replyText === PROMPT_WA) range = 'B4';
+    else if (replyText === PROMPT_IG) range = 'B5';
+    else if (replyText === PROMPT_TG) range = 'B6';
 
     if (range) {
       try {
@@ -75,9 +84,9 @@ bot.on('message', async (ctx) => {
         const resultText = await response.text();
         
         if (resultText.includes("Success")) {
-          return ctx.reply('✅ تم التحديث في الشيت بنجاح!', mainKeyboard);
+          return ctx.reply('✅ تم التحديث بنجاح!', mainKeyboard);
         } else {
-          return ctx.reply('❌ رد جوجل: ' + resultText, mainKeyboard);
+          return ctx.reply('❌ خطأ من جوجل: ' + resultText, mainKeyboard);
         }
       } catch (error) {
         return ctx.reply('❌ خطأ في الاتصال: ' + error.message);
