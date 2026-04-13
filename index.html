@@ -12,6 +12,21 @@
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=IBM+Plex+Sans+Arabic:wght@300;400;600&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* إخفاء المحتوى الأولي لتجنب الوميض */
+        .loading-text {
+            color: transparent !important;
+            background: linear-gradient(90deg, #ececec 25%, #f5f5f5 50%, #ececec 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 4px;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
 </head>
 
 <body>
@@ -27,64 +42,40 @@
                 <div class="image-wrapper animate-entry">
                     <img id="profile-img" src="https://lh3.googleusercontent.com/d/1dGWqi0CjHvJm821cLtIfywM3PK3OYEf-" alt="صفحة حمدي الشخصية" class="profile-img">
                 </div>
-                <h1 id="profile-name" class="animate-entry" style="animation-delay: 0.1s;">حمدي دومة</h1>
-                <p id="profile-bio" class="bio animate-entry" style="animation-delay: 0.2s;">مرحباً بك في عالمي الرقمي. تجد هنا جميع
-                    الروابط الرسمية للتواصل معي.</p>
+                <!-- جعل النصوص فارغة مبدئياً لتجنب ظهور البيانات القديمة -->
+                <h1 id="profile-name" class="animate-entry" style="animation-delay: 0.1s;">...</h1>
+                <p id="profile-bio" class="bio animate-entry" style="animation-delay: 0.2s;">جاري تحميل البيانات...</p>
             </div>
 
             <div id="links-container" class="links-grid">
-                <a href="https://www.facebook.com/hamdy.doma77" class="link-item animate-entry"
-                    style="animation-delay: 0.3s;" target="_blank" rel="noopener noreferrer" id="facebook-link">
+                <!-- شاشات تحميل مؤقتة للروابط -->
+                <a href="#" class="link-item animate-entry" style="animation-delay: 0.3s;" id="facebook-link">
                     <div class="link-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-facebook">
-                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-facebook"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /></svg>
                     </div>
                     <span class="link-text">فيسبوك</span>
                     <span class="link-arrow">←</span>
                 </a>
 
-                <a href="https://wa.me/201002002957" class="link-item animate-entry" style="animation-delay: 0.4s;"
-                    target="_blank" rel="noopener noreferrer" id="whatsapp-link">
+                <a href="#" class="link-item animate-entry" style="animation-delay: 0.4s;" id="whatsapp-link">
                     <div class="link-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-phone">
-                            <path
-                                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-phone"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
                     </div>
                     <span class="link-text">واتساب</span>
                     <span class="link-arrow">←</span>
                 </a>
 
-                <a href="https://instagram.com/hamdydoma77" class="link-item animate-entry"
-                    style="animation-delay: 0.5s;" target="_blank" rel="noopener noreferrer" id="instagram-link">
+                <a href="#" class="link-item animate-entry" style="animation-delay: 0.5s;" id="instagram-link">
                     <div class="link-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-instagram">
-                            <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                            <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram"><rect width="20" height="20" x="2" y="2" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" x2="17.51" y1="6.5" y2="6.5" /></svg>
                     </div>
                     <span class="link-text">إنستجرام</span>
                     <span class="link-arrow">←</span>
                 </a>
 
-
-                <a href="https://t.me/Domaphone" class="link-item animate-entry" style="animation-delay: 0.6s;" target="_blank"
-                    rel="noopener noreferrer" id="telegram-link">
+                <a href="#" class="link-item animate-entry" style="animation-delay: 0.6s;" id="telegram-link">
                     <div class="link-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-send">
-                            <path d="m22 2-7 20-4-9-9-4Z" />
-                            <path d="M22 2 11 13" />
-                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send"><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></svg>
                     </div>
                     <span class="link-text">تليجرام</span>
                     <span class="link-arrow">←</span>
@@ -97,18 +88,17 @@
         </div>
     </main>
 
-    <!-- Dynamic Loader -->
     <script>
         async function loadSiteData() {
             try {
-                const response = await fetch('/api/site-data');
+                // إضافة timestamp لمنع الكاش (التخزين المؤقت)
+                const response = await fetch('/api/site-data?t=' + Date.now());
                 const data = await response.json();
 
                 if (data) {
                     if (data.name) document.getElementById('profile-name').innerText = data.name;
                     if (data.bio) document.getElementById('profile-bio').innerText = data.bio;
                     
-                    // Update social links if they exist
                     const links = {
                         'facebook-link': data.fb_link,
                         'whatsapp-link': data.wa_link,
@@ -118,11 +108,21 @@
 
                     for (const [id, url] of Object.entries(links)) {
                         const el = document.getElementById(id);
-                        if (el && url) el.href = url;
+                        if (el) {
+                            if (url) {
+                                el.href = url;
+                                el.style.display = 'flex'; // إظهار الرابط لو موجود
+                            } else {
+                                el.style.display = 'none'; // إخفاء الرابط لو مش موجود في الشيت
+                            }
+                        }
                     }
                 }
             } catch (e) {
                 console.log('Dynamic load skipped or failed:', e);
+                // في حالة الفشل نضع قيم افتراضية بدل "جاري التحميل"
+                document.getElementById('profile-name').innerText = 'حمدي دومة';
+                document.getElementById('profile-bio').innerText = 'مرحباً بك في عالمي الرقمي.';
             }
         }
         loadSiteData();
