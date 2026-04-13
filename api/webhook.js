@@ -1,29 +1,11 @@
 const { Telegraf } = require('telegraf');
-const { google } = require('googleapis');
 
 // --- بياناتك المحفوظة ---
 const BOT_TOKEN = '8402726492:AAGLLp8_8wjBBUSA175XB2pM83xty2DmgCU';
-const SPREADSHEET_ID = '10CH91sRewtZGXkdu1EOosSnDfj8N9-Uu2Nf65L5U9lw';
 const OWNER_ID = '682572594';
-
-// انسخ كل محتويات ملف الـ JSON اللي حملته من جوجل وحطها هنا بين العلامتين دول
-const GOOGLE_JSON = `
-
-`;
-// ----------------------------
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwgDHeVxzTb0HENlF6618ejN75QKl5_ERoEptbh4HYJzC3UBWGqubjIyJVPp_4prTuw/exec';
 
 const bot = new Telegraf(BOT_TOKEN);
-
-const getSheetsClient = () => {
-  const credentials = JSON.parse(GOOGLE_JSON);
-  const auth = new google.auth.JWT(
-    credentials.client_email,
-    null,
-    credentials.private_key.replace(/\\n/g, '\n'),
-    ['https://www.googleapis.com/auth/spreadsheets']
-  );
-  return google.sheets({ version: 'v4', auth });
-};
 
 // حماية البوت
 bot.use(async (ctx, next) => {
@@ -87,14 +69,10 @@ bot.on('message', async (ctx) => {
 
     if (range) {
       try {
-        if (!GOOGLE_JSON.trim()) throw new Error("Please add your GOOGLE_JSON content");
-        const sheets = getSheetsClient();
-        await sheets.spreadsheets.values.update({
-          spreadsheetId: SPREADSHEET_ID,
-          range,
-          valueInputOption: 'USER_ENTERED',
-          resource: { values: [[ctx.message.text]] },
-        });
+        const updateUrl = `${SCRIPT_URL}?range=${encodeURIComponent(range)}&value=${encodeURIComponent(ctx.message.text)}`;
+        const response = await fetch(updateUrl);
+        if (!response.ok) throw new Error('Failed to update sheet');
+        
         return ctx.reply('✅ تم التحديث بنجاح!', mainKeyboard);
       } catch (error) {
         return ctx.reply('❌ خطأ: ' + error.message);
