@@ -3,11 +3,9 @@ const { google } = require('googleapis');
 // --- حط بياناتك هنا مباشرة ---
 const SPREADSHEET_ID = '10CH91sRewtZGXkdu1EOosSnDfj8N9-Uu2Nf65L5U9lw';
 
-// حط محتوى ملف الـ JSON بتاع جوجل هنا (بين علامتين الاقتباس ` `)
+// انسخ كل محتويات ملف الـ JSON اللي حملته من جوجل وحطها هنا بين العلامتين دول
 const GOOGLE_JSON = `
-{
-  "كنسخ": "محتوى ملف الـ JSON هنا بالكامل"
-}
+
 `;
 // ----------------------------
 
@@ -16,6 +14,9 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET');
 
   try {
+    if (!GOOGLE_JSON.trim()) {
+       return res.status(500).json({ error: "من فضلك ضع محتوى ملف الـ JSON داخل المتغير GOOGLE_JSON" });
+    }
     const credentials = JSON.parse(GOOGLE_JSON);
     const auth = new google.auth.JWT(
       credentials.client_email,
@@ -43,7 +44,7 @@ module.exports = async (req, res) => {
   } catch (error) {
     res.status(500).json({ 
       error: error.message,
-      details: error.stack 
+      tip: "تأكد من نسخ الـ JSON بشكل صحيح"
     });
   }
 };

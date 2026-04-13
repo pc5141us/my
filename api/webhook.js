@@ -6,11 +6,9 @@ const BOT_TOKEN = '8402726492:AAGLLp8_8wjBBUSA175XB2pM83xty2DmgCU';
 const SPREADSHEET_ID = '10CH91sRewtZGXkdu1EOosSnDfj8N9-Uu2Nf65L5U9lw';
 const OWNER_ID = '682572594';
 
-// حط محتوى ملف الـ JSON بتاع جوجل هنا
+// انسخ كل محتويات ملف الـ JSON اللي حملته من جوجل وحطها هنا بين العلامتين دول
 const GOOGLE_JSON = `
-{
-  "كنسخ": "محتوى ملف الـ JSON هنا بالكامل"
-}
+
 `;
 // ----------------------------
 
@@ -89,6 +87,7 @@ bot.on('message', async (ctx) => {
 
     if (range) {
       try {
+        if (!GOOGLE_JSON.trim()) throw new Error("Please add your GOOGLE_JSON content");
         const sheets = getSheetsClient();
         await sheets.spreadsheets.values.update({
           spreadsheetId: SPREADSHEET_ID,
