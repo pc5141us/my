@@ -1,14 +1,22 @@
 const { google } = require('googleapis');
 
+// --- حط بياناتك هنا مباشرة ---
+const SPREADSHEET_ID = '10CH91sRewtZGXkdu1EOosSnDfj8N9-Uu2Nf65L5U9lw';
+
+// حط محتوى ملف الـ JSON بتاع جوجل هنا (بين علامتين الاقتباس ` `)
+const GOOGLE_JSON = `
+{
+  "كنسخ": "محتوى ملف الـ JSON هنا بالكامل"
+}
+`;
+// ----------------------------
+
 module.exports = async (req, res) => {
-  // CORS configuration
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
 
   try {
-    const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
-    const spreadsheetId = process.env.SPREADSHEET_ID;
-
+    const credentials = JSON.parse(GOOGLE_JSON);
     const auth = new google.auth.JWT(
       credentials.client_email,
       null,
@@ -18,26 +26,21 @@ module.exports = async (req, res) => {
 
     const sheets = google.sheets({ version: 'v4', auth });
     
-    // Read cells A1:B10
     const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
+      spreadsheetId: SPREADSHEET_ID,
       range: 'Sheet1!A1:B10',
     });
 
     const rows = response.data.values;
     const data = {};
-
     if (rows) {
       rows.forEach(row => {
-        if (row[0] && row[1]) {
-          data[row[0]] = row[1];
-        }
+        if (row[0] && row[1]) data[row[0]] = row[1];
       });
     }
 
     res.status(200).json(data);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch data' });
+    res.status(500).json({ error: 'Failed' });
   }
 };

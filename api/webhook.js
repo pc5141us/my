@@ -1,12 +1,23 @@
 const { Telegraf } = require('telegraf');
 const { google } = require('googleapis');
 
-const spreadsheetId = process.env.SPREADSHEET_ID;
-const bot = new Telegraf(process.env.BOT_TOKEN);
+// --- حط بياناتك هنا مباشرة ---
+const BOT_TOKEN = '8402726492:AAGLLp8_8wjBBUSA175XB2pM83xty2DmgCU';
+const SPREADSHEET_ID = '10CH91sRewtZGXkdu1EOosSnDfj8N9-Uu2Nf65L5U9lw';
+const OWNER_ID = ''; // اختياري: حط رقم الأيدي بتاعك هنا
 
-// Initialize Google Sheets Auth
+// حط محتوى ملف الـ JSON بتاع جوجل هنا (بين علامتين الاقتباس ` `)
+const GOOGLE_JSON = `
+{
+  "كنسخ": "محتوى ملف الـ JSON هنا بالكامل"
+}
+`;
+// ----------------------------
+
+const bot = new Telegraf(BOT_TOKEN);
+
 const getSheetsClient = () => {
-  const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
+  const credentials = JSON.parse(GOOGLE_JSON);
   const auth = new google.auth.JWT(
     credentials.client_email,
     null,
@@ -16,14 +27,10 @@ const getSheetsClient = () => {
   return google.sheets({ version: 'v4', auth });
 };
 
-const AUTHORIZED_ID = process.env.OWNER_ID;
-
-bot.command('my_id', (ctx) => {
-  ctx.reply(`الأيدي بتاعك هو: ${ctx.from.id}`);
-});
+bot.command('my_id', (ctx) => ctx.reply(`الأيدي بتاعك هو: ${ctx.from.id}`));
 
 bot.use(async (ctx, next) => {
-  if (AUTHORIZED_ID && ctx.from.id.toString() !== AUTHORIZED_ID) {
+  if (OWNER_ID && ctx.from.id.toString() !== OWNER_ID) {
     return ctx.reply('عذراً، هذا البوت مخصص للمالك فقط.');
   }
   return next();
@@ -33,12 +40,12 @@ const updateValue = async (ctx, range, value) => {
   try {
     const sheets = getSheetsClient();
     await sheets.spreadsheets.values.update({
-      spreadsheetId,
+      spreadsheetId: SPREADSHEET_ID,
       range,
       valueInputOption: 'USER_ENTERED',
       resource: { values: [[value]] },
     });
-    ctx.reply('✅ تم التحديث في جوجل شيت بنجاح!');
+    ctx.reply('✅ تم التحديث في جوجل شيت!');
   } catch (error) {
     console.error(error);
     ctx.reply('❌ فشل التحديث: ' + error.message);
@@ -46,7 +53,7 @@ const updateValue = async (ctx, range, value) => {
 };
 
 bot.start((ctx) => {
-  ctx.reply('أهلاً بك يا حمدي! \n\n/name - تغيير الاسم\n/bio - تغيير الوصف\n/fb - رابط فيسبوك\n/wa - رابط واتساب\n/ig - رابط إنستجرام\n/tg - رابط تليجرام');
+  ctx.reply('أهلاً بك يا حمدي! \n\nاستخدم الأوامر: /name, /bio, /fb, /wa, /ig, /tg');
 });
 
 bot.on('text', async (ctx) => {
