@@ -60,22 +60,28 @@ bot.on('message', async (ctx) => {
   if (ctx.message.reply_to_message) {
     const replyText = ctx.message.reply_to_message.text;
     let range = '';
-    if (replyText.includes('الاسم')) range = 'Sheet1!B1';
-    else if (replyText.includes('الوصف')) range = 'Sheet1!B2';
-    else if (replyText.includes('فيسبوك')) range = 'Sheet1!B3';
-    else if (replyText.includes('واتساب')) range = 'Sheet1!B4';
-    else if (replyText.includes('إنستجرام')) range = 'Sheet1!B5';
-    else if (replyText.includes('تليجرام')) range = 'Sheet1!B6';
+    
+    // استخدام B1, B2 مباشرة لتجنب مشاكل أسماء الصفحات
+    if (replyText.includes('الاسم')) range = 'B1';
+    else if (replyText.includes('الوصف')) range = 'B2';
+    else if (replyText.includes('فيسبوك')) range = 'B3';
+    else if (replyText.includes('واتساب')) range = 'B4';
+    else if (replyText.includes('إنستجرام')) range = 'B5';
+    else if (replyText.includes('تليجرام')) range = 'B6';
 
     if (range) {
       try {
         const updateUrl = `${SCRIPT_URL}?range=${encodeURIComponent(range)}&value=${encodeURIComponent(ctx.message.text)}`;
         const response = await fetch(updateUrl);
-        if (!response.ok) throw new Error('Failed to update sheet');
+        const resultText = await response.text();
         
-        return ctx.reply('✅ تم التحديث بنجاح!', mainKeyboard);
+        if (resultText.includes("Success")) {
+          return ctx.reply('✅ تم التحديث في الشيت بنجاح!', mainKeyboard);
+        } else {
+          return ctx.reply('❌ رد جوجل: ' + resultText, mainKeyboard);
+        }
       } catch (error) {
-        return ctx.reply('❌ خطأ: ' + error.message);
+        return ctx.reply('❌ خطأ في الاتصال: ' + error.message);
       }
     }
   }
