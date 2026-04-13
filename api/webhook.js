@@ -49,7 +49,7 @@ bot.hears('🌐 روابط السوشيال ميديا', (ctx) => {
   return ctx.reply('اختر الرابط:', linksKeyboard);
 });
 
-// نصوص الرسائل التي يرد بها البوت (سنستخدمها للتعرف على نوع التعديل)
+// نصوص الرسائل
 const PROMPT_NAME = 'أرسل الاسم الجديد الآن:';
 const PROMPT_BIO = 'أرسل الوصف الجديد الآن:';
 const PROMPT_FB = 'أرسل رابط فيسبوك الجديد:';
@@ -69,13 +69,13 @@ bot.on('message', async (ctx) => {
     const replyText = ctx.message.reply_to_message.text;
     let range = '';
     
-    // تحديد الخلية بناءً على نص رسالة البوت الأصلية بدقة
-    if (replyText === PROMPT_NAME) range = 'B1';
-    else if (replyText === PROMPT_BIO) range = 'B2';
-    else if (replyText === PROMPT_FB) range = 'B3';
-    else if (replyText === PROMPT_WA) range = 'B4';
-    else if (replyText === PROMPT_IG) range = 'B5';
-    else if (replyText === PROMPT_TG) range = 'B6';
+    // تم ترحيل الصفوف بمقدار صف واحد (تبدأ من الصف الثاني) لترك مساحة للعناوين
+    if (replyText === PROMPT_NAME) range = 'B2';
+    else if (replyText === PROMPT_BIO) range = 'B3';
+    else if (replyText === PROMPT_FB) range = 'B4';
+    else if (replyText === PROMPT_WA) range = 'B5';
+    else if (replyText === PROMPT_IG) range = 'B6';
+    else if (replyText === PROMPT_TG) range = 'B7';
 
     if (range) {
       try {
