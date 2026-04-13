@@ -15,7 +15,18 @@ const adminKeyboard = {
   reply_markup: {
     keyboard: [
       [{ text: '👤 تعديل الاسم' }, { text: '📝 تعديل الوصف' }],
-      [{ text: '🌐 روابط السوشيال ميديا' }]
+      [{ text: '🌐 روابط السوشيال ميديا' }],
+      [{ text: '📢 إدارة المستخدمين' }]
+    ],
+    resize_keyboard: true
+  }
+};
+
+const usersManagementKeyboard = {
+  reply_markup: {
+    keyboard: [
+      [{ text: '🚫 حظر مستخدم' }, { text: '✅ فك الحظر' }],
+      [{ text: '⬅️ الرجوع للقائمة الرئيسية' }]
     ],
     resize_keyboard: true
   }
@@ -45,41 +56,19 @@ bot.start(async (ctx) => {
   const userId = ctx.from.id.toString();
   
   if (userId === OWNER_ID) {
-    return ctx.reply('أهلاً بك يا حمدي! أنت المالك، يمكنك التحكم في الموقع من هنا:', adminKeyboard);
+    return ctx.reply('أهلاً بك يا حمدي! أنت المالك، يمكنك التحكم في الموقع والمستخدمين من هنا:', adminKeyboard);
   } else {
     // إشعار للمالك بدخول شخص جديد
-    await bot.telegram.sendMessage(OWNER_ID, `🔔 مستخدم جديد دخل البوت:\nالاسم: ${ctx.from.first_name}\nالمعرف: ${userId}\nاليوزر: @${ctx.from.username || 'لا يوجد'}`);
+    await bot.telegram.sendMessage(OWNER_ID, `🔔 مستخدم جديد دخل البوت:\nالاسم: ${ctx.from.first_name}\nالمعرف: \`${userId}\` (اضغط للنسخ)\nاليوزر: @${ctx.from.username || 'لا يوجد'}`);
     
     return ctx.reply(`أهلاً بك يا ${ctx.from.first_name}! يمكنك إرسال رسالتك هنا وسأقوم بالرد عليك في أقرب وقت.`);
   }
 });
 
 // أوامر الإدارة (للمالك فقط)
-bot.command('ban', (ctx) => {
+bot.hears('📢 إدارة المستخدمين', (ctx) => {
   if (ctx.from.id.toString() !== OWNER_ID) return;
-  const targetId = ctx.message.text.split(' ')[1];
-  if (!targetId) return ctx.reply('❌ يرجى إدخال معرف المستخدم. مثال: /ban 123456');
-  bannedUsers.add(targetId);
-  ctx.reply(`✅ تم حظر المستخدم ${targetId} بنجاح.`);
-});
-
-bot.command('unban', (ctx) => {
-  if (ctx.from.id.toString() !== OWNER_ID) return;
-  const targetId = ctx.message.text.split(' ')[1];
-  if (!targetId) return ctx.reply('❌ يرجى إدخال معرف المستخدم. مثال: /unban 123456');
-  bannedUsers.delete(targetId);
-  ctx.reply(`✅ تم إلغاء حظر المستخدم ${targetId} بنجاح.`);
-});
-
-// التعامل مع الرسائل
-bot.hears('⬅️ الرجوع للقائمة الرئيسية', (ctx) => {
-  if (ctx.from.id.toString() !== OWNER_ID) return;
-  return ctx.reply('الرئيسية', adminKeyboard);
-});
-
-bot.hears('🌐 روابط السوشيال ميديا', (ctx) => {
-  if (ctx.from.id.toString() !== OWNER_ID) return;
-  return ctx.reply('اختر الرابط:', linksKeyboard);
+  ctx.reply('اختر الإجراء المطلوب:', usersManagementKeyboard);
 });
 
 // نصوص الرسائل الإدارية
@@ -89,6 +78,28 @@ const PROMPT_FB = 'أرسل رابط فيسبوك الجديد:';
 const PROMPT_WA = 'أرسل رابط واتساب الجديد:';
 const PROMPT_IG = 'أرسل رابط إنستجرام الجديد:';
 const PROMPT_TG = 'أرسل رابط تليجرام الجديد:';
+const PROMPT_BAN = 'أرسل الـ ID الخاص بالمستخدم لحظره:';
+const PROMPT_UNBAN = 'أرسل الـ ID الخاص بالمستخدم لفك الحظر عنه:';
+
+bot.hears('🚫 حظر مستخدم', (ctx) => {
+  if (ctx.from.id.toString() !== OWNER_ID) return;
+  ctx.reply(PROMPT_BAN, { reply_markup: { force_reply: true } });
+});
+
+bot.hears('✅ فك الحظر', (ctx) => {
+  if (ctx.from.id.toString() !== OWNER_ID) return;
+  ctx.reply(PROMPT_UNBAN, { reply_markup: { force_reply: true } });
+});
+
+bot.hears('⬅️ الرجوع للقائمة الرئيسية', (ctx) => {
+  if (ctx.from.id.toString() !== OWNER_ID) return;
+  return ctx.reply('القائمة الرئيسية', adminKeyboard);
+});
+
+bot.hears('🌐 روابط السوشيال ميديا', (ctx) => {
+  if (ctx.from.id.toString() !== OWNER_ID) return;
+  return ctx.reply('اختر الرابط لتعديله:', linksKeyboard);
+});
 
 bot.hears('👤 تعديل الاسم', (ctx) => {
   if (ctx.from.id.toString() !== OWNER_ID) return;
@@ -121,11 +132,20 @@ bot.on('message', async (ctx) => {
 
   // أولاً: إذا كان المالك هو من يرسل
   if (userId === OWNER_ID) {
-    // إذا كان المالك يرد على رسالة محولة
     if (ctx.message.reply_to_message) {
       const replyToText = ctx.message.reply_to_message.text || '';
       
-      // تحقق من تعديل الموقع أولاً (المنطق القديم)
+      // التعامل مع الحظر وفك الحظر
+      if (replyToText === PROMPT_BAN) {
+        bannedUsers.add(messageText.trim());
+        return ctx.reply(`✅ تم حظر المستخدم ${messageText} بنجاح.`, usersManagementKeyboard);
+      }
+      if (replyToText === PROMPT_UNBAN) {
+        bannedUsers.delete(messageText.trim());
+        return ctx.reply(`✅ تم إلغاء حظر المستخدم ${messageText} بنجاح.`, usersManagementKeyboard);
+      }
+
+      // منطق تعديل بيانات الموقع (Google Sheets)
       let range = '';
       if (replyToText === PROMPT_NAME) range = 'B2';
       else if (replyToText === PROMPT_BIO) range = 'B3';
@@ -144,8 +164,7 @@ bot.on('message', async (ctx) => {
         } catch (e) { return ctx.reply('❌ خطأ اتصال: ' + e.message); }
       }
 
-      // ثانياً: إذا كان المالك يرد على رسالة مستخدم (للتواصل)
-      // نبحث عن معرف المستخدم في الرسالة التي يتم الرد عليها
+      // الرد على رسائل المستخدمين (التواصل)
       const match = replyToText.match(/\(ID: (\d+)\)/);
       if (match) {
         const targetUserId = match[1];
@@ -160,7 +179,6 @@ bot.on('message', async (ctx) => {
   } 
   // ثانياً: إذا كان المستخدم العادي هو من يرسل
   else {
-    // توجيه الرسالة للمالك
     const forwardText = `📨 رسالة من: ${ctx.from.first_name} (ID: ${userId})\n\n${messageText || '[وسائط غير نصية]'}\n\n-- للرد على المستخدم، قم بالرد على هذه الرسالة مباشرة.`;
     await bot.telegram.sendMessage(OWNER_ID, forwardText);
     return ctx.reply('🚀 تم إرسال رسالتك، سأرد عليك قريباً.');
