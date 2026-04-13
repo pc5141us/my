@@ -25,14 +25,14 @@
         <div class="profile-card">
             <div class="profile-header">
                 <div class="image-wrapper animate-entry">
-                    <img src="https://lh3.googleusercontent.com/d/1dGWqi0CjHvJm821cLtIfywM3PK3OYEf-" alt="صفحة حمدي الشخصية" class="profile-img">
+                    <img id="profile-img" src="https://lh3.googleusercontent.com/d/1dGWqi0CjHvJm821cLtIfywM3PK3OYEf-" alt="صفحة حمدي الشخصية" class="profile-img">
                 </div>
-                <h1 class="animate-entry" style="animation-delay: 0.1s;">حمدي دومة</h1>
-                <p class="bio animate-entry" style="animation-delay: 0.2s;">مرحباً بك في عالمي الرقمي. تجد هنا جميع
+                <h1 id="profile-name" class="animate-entry" style="animation-delay: 0.1s;">حمدي دومة</h1>
+                <p id="profile-bio" class="bio animate-entry" style="animation-delay: 0.2s;">مرحباً بك في عالمي الرقمي. تجد هنا جميع
                     الروابط الرسمية للتواصل معي.</p>
             </div>
 
-            <div class="links-grid">
+            <div id="links-container" class="links-grid">
                 <a href="https://www.facebook.com/hamdy.doma77" class="link-item animate-entry"
                     style="animation-delay: 0.3s;" target="_blank" rel="noopener noreferrer" id="facebook-link">
                     <div class="link-icon">
@@ -96,6 +96,37 @@
             </footer>
         </div>
     </main>
+
+    <!-- Dynamic Loader -->
+    <script>
+        async function loadSiteData() {
+            try {
+                const response = await fetch('/api/site-data');
+                const data = await response.json();
+
+                if (data) {
+                    if (data.name) document.getElementById('profile-name').innerText = data.name;
+                    if (data.bio) document.getElementById('profile-bio').innerText = data.bio;
+                    
+                    // Update social links if they exist
+                    const links = {
+                        'facebook-link': data.fb_link,
+                        'whatsapp-link': data.wa_link,
+                        'instagram-link': data.ig_link,
+                        'telegram-link': data.tg_link
+                    };
+
+                    for (const [id, url] of Object.entries(links)) {
+                        const el = document.getElementById(id);
+                        if (el && url) el.href = url;
+                    }
+                }
+            } catch (e) {
+                console.log('Dynamic load skipped or failed:', e);
+            }
+        }
+        loadSiteData();
+    </script>
 </body>
 
 </html>
