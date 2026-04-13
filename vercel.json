@@ -1,6 +1,7 @@
 {
   "version": 2,
   "cleanUrls": true,
-  "framework": null,
-  "public": true
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" }
+  ]
 }
