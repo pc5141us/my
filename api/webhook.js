@@ -88,20 +88,24 @@ bot.hears('📢 إدارة المستخدمين', (ctx) => {
 bot.hears('👥 قائمة المستخدمين', async (ctx) => {
   if (ctx.from.id.toString() !== OWNER_ID) return;
   try {
-    const statusMsg = await ctx.reply('⏳ جاري جلب القائمة من جوجل شيت...');
+    const statusMsg = await ctx.reply('⏳ جاري جلب القائمة...');
     const response = await fetch(`${SCRIPT_URL}?action=getUsers`);
     const users = await response.json();
     
     if (!users || users.length === 0) return ctx.reply('📭 لا يوجد مستخدمين مسجلين بعد.');
     
-    // إنشاء أزرار بأسماء المستخدمين
-    const buttons = users.map(u => ([{
-      text: `👤 ${u.name} (@${u.username})`,
-      callback_data: `manage_${u.id}`
-    }]));
+    // تقسيم المستخدمين إلى صفوف يحتوي كل منها على 3 أعمدة
+    const buttons = [];
+    for (let i = 0; i < users.length; i += 3) {
+      const row = users.slice(i, i + 3).map(u => ({
+        text: `👤 ${u.name.split(' ')[0]}`, // نستخدم الاسم الأول فقط ليتناسب مع الأعمدة الـ 3
+        callback_data: `manage_${u.id}`
+      }));
+      buttons.push(row);
+    }
 
     await bot.telegram.deleteMessage(ctx.chat.id, statusMsg.message_id);
-    ctx.reply('👥 اختر مستخدماً للتحكم به:', {
+    ctx.reply('👥 قائمة المستخدمين (3 أعمدة):', {
       reply_markup: { inline_keyboard: buttons }
     });
   } catch (e) {
@@ -109,42 +113,47 @@ bot.hears('👥 قائمة المستخدمين', async (ctx) => {
   }
 });
 
+// دالة مساعدة لإنشاء لوحة التحكم لمستخدم معين
+function getUserControlKeyboard(targetId, isBanned) {
+  return {
+    inline_keyboard: [
+      [{ text: '💬 إرسال رسالة خاصة', callback_data: `msg_${targetId}` }],
+      [{ 
+        text: isBanned ? '✅ فك الحظر' : '🚫 حظر المستخدم', 
+        callback_data: isBanned ? `unban_${targetId}` : `ban_${targetId}` 
+      }],
+      [{ text: '⬅️ العودة للقائمة الكاملة', callback_data: 'back_to_list' }]
+    ]
+  };
+}
+
 // التعامل مع الضغط على اسم المستخدم
 bot.action(/manage_(.+)/, async (ctx) => {
   const targetId = ctx.match[1];
   const isBanned = bannedUsers.has(targetId);
   
-  const keyboard = [
-    [{ text: '💬 إرسال رسالة خاصة', callback_data: `msg_${targetId}` }],
-    [{ 
-      text: isBanned ? '✅ فك الحظر' : '🚫 حظر المستخدم', 
-      callback_data: isBanned ? `unban_${targetId}` : `ban_${targetId}` 
-    }],
-    [{ text: '⬅️ العودة للقائمة', callback_data: 'back_to_list' }]
-  ];
-
-  await ctx.editMessageText(`🛠️ إدارة المستخدم (ID: ${targetId}):\nالحالة الحالية: ${isBanned ? '🔴 محظور' : '🟢 نشط'}`, {
-    reply_markup: { inline_keyboard: keyboard }
+  await ctx.editMessageText(`🛠️ إدارة المستخدم (ID: ${targetId})\nالحالة: ${isBanned ? '🔴 محظور' : '🟢 نشط'}`, {
+    reply_markup: getUserControlKeyboard(targetId, isBanned)
   });
 });
 
-// تنفيذ الحظر من الأزرار
+// تنفيذ الحظر مع بقاء الأزرار
 bot.action(/ban_(.+)/, async (ctx) => {
   const targetId = ctx.match[1];
   bannedUsers.add(targetId);
-  await ctx.answerCbQuery('✅ تم الحظر');
-  return ctx.editMessageText(`🚫 تم حظر المستخدم ${targetId} بنجاح.`, {
-    reply_markup: { inline_keyboard: [[{ text: '⬅️ عودة', callback_data: `manage_${targetId}` }]] }
+  await ctx.answerCbQuery('🚫 تم الحظر');
+  return ctx.editMessageText(`🛠️ إدارة المستخدم (ID: ${targetId})\nالحالة: 🔴 محظور (تم التحديث الآن)`, {
+    reply_markup: getUserControlKeyboard(targetId, true)
   });
 });
 
-// تنفيذ فك الحظر من الأزرار
+// تنفيذ فك الحظر مع بقاء الأزرار
 bot.action(/unban_(.+)/, async (ctx) => {
   const targetId = ctx.match[1];
   bannedUsers.delete(targetId);
-  await ctx.answerCbQuery('✅ تم فك الحظر');
-  return ctx.editMessageText(`🟢 تم فك الحظر عن المستخدم ${targetId}.`, {
-    reply_markup: { inline_keyboard: [[{ text: '⬅️ عودة', callback_data: `manage_${targetId}` }]] }
+  await ctx.answerCbQuery('🟢 تم فك الحظر');
+  return ctx.editMessageText(`🛠️ إدارة المستخدم (ID: ${targetId})\nالحالة: 🟢 نشط (تم التحديث الآن)`, {
+    reply_markup: getUserControlKeyboard(targetId, false)
   });
 });
 
@@ -152,7 +161,7 @@ bot.action(/unban_(.+)/, async (ctx) => {
 bot.action(/msg_(.+)/, async (ctx) => {
   const targetId = ctx.match[1];
   await ctx.answerCbQuery();
-  ctx.reply(`📝 اكتب رسالتك الآن لإرسالها للمستخدم (ID: ${targetId}):\n\n*(سيتم إرسال كل ما تكتبه في الرسالة القادمة)*`, {
+  ctx.reply(`📝 اكتب رسالتك الآن للمستخدم (ID: ${targetId}):\n\n*(بعد الإرسال ستظهر لك خيارات التحكم مرة أخرى)*`, {
     reply_markup: { force_reply: true }
   });
 });
@@ -160,7 +169,19 @@ bot.action(/msg_(.+)/, async (ctx) => {
 // العودة للقائمة
 bot.action('back_to_list', async (ctx) => {
   await ctx.answerCbQuery();
-  return ctx.reply('👥 قائمة المستخدمين:', { reply_markup: { keyboard: usersManagementKeyboard.reply_markup.keyboard, resize_keyboard: true } });
+  // بدلاً من إرسال رسالة جديدة، سنقوم بتعديل الرسالة الحالية لإعادة القائمة (توفيراً للمساحة)
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getUsers`);
+    const users = await response.json();
+    const buttons = [];
+    for (let i = 0; i < users.length; i += 3) {
+      buttons.push(users.slice(i, i + 3).map(u => ({
+        text: `👤 ${u.name.split(' ')[0]}`,
+        callback_data: `manage_${u.id}`
+      })));
+    }
+    return ctx.editMessageText('👥 اختر مستخدماً:', { reply_markup: { inline_keyboard: buttons } });
+  } catch (e) { return ctx.reply('❌ خطأ في العودة للقائمة.'); }
 });
 
 // نصوص الرسائل الإدارية
@@ -239,7 +260,10 @@ bot.on('message', async (ctx) => {
         const targetId = individualMsgMatch[1];
         try {
           await bot.telegram.sendMessage(targetId, `💬 رسالة خاصة من حمدي:\n\n${messageText}`);
-          return ctx.reply('✅ تم إرسال رسالتك الخاصة بنجاح.');
+          const isBanned = bannedUsers.has(targetId);
+          return ctx.reply(`✅ تم إرسال رسالتك الخاصة بنجاح لـ (ID: ${targetId}).\nهل تريد القيام بشيء آخر؟`, {
+            reply_markup: getUserControlKeyboard(targetId, isBanned)
+          });
         } catch (e) { return ctx.reply('❌ فشل الإرسال للمستخدم.'); }
       }
 
