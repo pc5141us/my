@@ -3,7 +3,7 @@ const { Telegraf } = require('telegraf');
 // --- بياناتك المحفوظة ---
 const BOT_TOKEN = '8402726492:AAGLLp8_8wjBBUSA175XB2pM83xty2DmgCU';
 const OWNER_ID = '682572594';
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwgDHeVxzTb0HENlF6618ejN75QKl5_ERoEptbh4HYJzC3UBWGqubjIyJVPp_4prTuw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzps7gLgC8OKl9xnJnMH0qW71FvXy_lISV73_lIVl0jhf4FAxe1odlSJRP0TXsZp07H/exec';
 
 const bot = new Telegraf(BOT_TOKEN);
 
@@ -61,7 +61,6 @@ bot.on('message', async (ctx) => {
     const replyText = ctx.message.reply_to_message.text;
     let range = '';
     
-    // استخدام B1, B2 مباشرة لتجنب مشاكل أسماء الصفحات
     if (replyText.includes('الاسم')) range = 'B1';
     else if (replyText.includes('الوصف')) range = 'B2';
     else if (replyText.includes('فيسبوك')) range = 'B3';
