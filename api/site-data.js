@@ -7,7 +7,7 @@ module.exports = async (req, res) => {
 
   try {
     const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
-    const spreadsheetId = '10CH91sRewtZGXkdu1EOosSnDfj8N9-Uu2Nf65L5U9lw';
+    const spreadsheetId = process.env.SPREADSHEET_ID;
 
     const auth = new google.auth.JWT(
       credentials.client_email,

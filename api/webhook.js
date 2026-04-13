@@ -1,7 +1,7 @@
 const { Telegraf } = require('telegraf');
 const { google } = require('googleapis');
 
-const spreadsheetId = '10CH91sRewtZGXkdu1EOosSnDfj8N9-Uu2Nf65L5U9lw';
+const spreadsheetId = process.env.SPREADSHEET_ID;
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
 // Initialize Google Sheets Auth
