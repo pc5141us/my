@@ -225,8 +225,10 @@ bot.on('message', async (ctx) => {
           const targetUser = users.find(u => u.id.toString() === targetId.toString());
           const targetName = targetUser ? targetUser.name : 'المستخدِم';
 
-          await bot.telegram.sendMessage(targetId, `💬 رسالة من حمدي:\n\n${messageText}`);
-          return ctx.reply(`✅ تم الإرسال بنجاح للمستخدم: ${targetName}`, getUserControlKeyboard(targetName));
+          // إرسال رد المالك (نسخ الرسالة كما هي: نص، صورة، فيديو، الخ)
+          await ctx.copyMessage(targetId);
+          
+          return ctx.reply(`✅ تم إرسال ردك للمستخدم: ${targetName}`, getUserControlKeyboard(targetName));
         } catch (e) { 
           return ctx.reply(`❌ فشل الإرسال (تأكد من الـ ID: ${targetId}).`); 
         }
