@@ -46,11 +46,14 @@ const linksKeyboard = {
 
 function getUserControlKeyboard(id, name) {
   const safeName = name || 'المستخدِم';
+  // نستخدم الرمز \u200b لدمج الـ ID بشكل غير مرئي في نهاية النص
+  const hiddenId = `\u200b${id}`;
   return {
     reply_markup: {
       keyboard: [
-        [{ text: `💬 مراسلة (${safeName}) » ${id}` }],
-        [{ text: `🚫 حظر (${safeName}) » ${id}` }, { text: `✅ فك الحظر (${safeName}) » ${id}` }],
+        [{ text: `💬 مراسلة (${safeName})${hiddenId}` }],
+        [{ text: `🚫 حظر (${safeName})${hiddenId}` }, { text: `✅ فك الحظر (${safeName})${hiddenId}` }],
+        [{ text: `🆔 عرض الـ ID (${safeName})${hiddenId}` }],
         [{ text: '👥 قائمة المستخدمين' }, { text: '⬅️ الرجوع للقائمة الرئيسية' }]
       ],
       resize_keyboard: true
@@ -127,10 +130,10 @@ bot.hears(/^👤 (.+) \((\d+)\)$/, (ctx) => {
   const name = ctx.match[1].trim();
   const id = ctx.match[2];
   const isBanned = bannedUsers.has(id);
-  ctx.reply(`🛠️ إدارة المستخدم: ${name}\nID: ${id}\nالحالة: ${isBanned ? '🔴 محظور' : '🟢 نشط'}`, getUserControlKeyboard(id, name));
+  ctx.reply(`🛠️ إدارة المستخدم: ${name}\nالحالة: ${isBanned ? '🔴 محظور' : '🟢 نشط'}`, getUserControlKeyboard(id, name));
 });
 
-bot.hears(/^🚫 حظر \((.+)\) » (\d+)$/, (ctx) => {
+bot.hears(/^🚫 حظر \((.+)\)\u200b(\d+)$/, (ctx) => {
   if (ctx.from.id.toString() !== OWNER_ID) return;
   const name = ctx.match[1];
   const id = ctx.match[2];
@@ -138,7 +141,7 @@ bot.hears(/^🚫 حظر \((.+)\) » (\d+)$/, (ctx) => {
   ctx.reply(`✅ تم حظر المستخدم: ${name}`, getUserControlKeyboard(id, name));
 });
 
-bot.hears(/^✅ فك الحظر \((.+)\) » (\d+)$/, (ctx) => {
+bot.hears(/^✅ فك الحظر \((.+)\)\u200b(\d+)$/, (ctx) => {
   if (ctx.from.id.toString() !== OWNER_ID) return;
   const name = ctx.match[1];
   const id = ctx.match[2];
@@ -146,11 +149,18 @@ bot.hears(/^✅ فك الحظر \((.+)\) » (\d+)$/, (ctx) => {
   ctx.reply(`✅ تم فك الحظر عن: ${name}`, getUserControlKeyboard(id, name));
 });
 
-bot.hears(/^💬 مراسلة \((.+)\) » (\d+)$/, (ctx) => {
+bot.hears(/^💬 مراسلة \((.+)\)\u200b(\d+)$/, (ctx) => {
   if (ctx.from.id.toString() !== OWNER_ID) return;
   const name = ctx.match[1];
   const id = ctx.match[2];
   ctx.reply(`📝 اكتب رسالتك للمستخدم: ${name} (ID: ${id}):`, { reply_markup: { force_reply: true } });
+});
+
+bot.hears(/^🆔 عرض الـ ID \((.+)\)\u200b(\d+)$/, (ctx) => {
+  if (ctx.from.id.toString() !== OWNER_ID) return;
+  const name = ctx.match[1];
+  const id = ctx.match[2];
+  ctx.reply(`🆔 رقم التعريف (ID) للمستخدم ${name} هو:\n\n\`${id}\`\n\n*(اضغط على الرقم لنسخه)*`, { parse_mode: 'Markdown' });
 });
 
 // --- تعديل بيانات الموقع (أوامر الأزرار) ---
