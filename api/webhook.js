@@ -212,7 +212,8 @@ bot.on('message', async (ctx) => {
 
   if (userId === OWNER_ID) {
     if (ctx.message.reply_to_message) {
-      const replyToText = ctx.message.reply_to_message.text || '';
+      // نتحقق من النص أو الوصف (Caption) في حال كانت الرسالة صورة أو فيديو
+      const replyToText = ctx.message.reply_to_message.text || ctx.message.reply_to_message.caption || '';
       
       // رادار الـ ID الجديد (أكثر مرونة للبحث في كل الرسالة)
       const idMatch = replyToText.match(/ID: (\d+)/);
@@ -264,12 +265,20 @@ bot.on('message', async (ctx) => {
       }
     }
   } else {
-    // إرسال إشعار تعريفي للمالك (يستخدم للرد على المستخدم)
-    const infoHeader = `📨 رسالة من: ${ctx.from.first_name} (ID: ${userId})\n-- للرد، قم بالرد على هذه الرسالة.`;
-    await bot.telegram.sendMessage(OWNER_ID, infoHeader);
-    
-    // إرسال المحتوى الحقيقي (صورة، فيديو، نص، بصمة صوتية)
-    await ctx.copyMessage(OWNER_ID);
+    // تجهيز الهيدر الذي سيتم دمجه مع الرسالة
+    const header = `📨 من: ${ctx.from.first_name} (ID: ${userId})\n`;
+
+    // إذا كانت الرسالة نصية
+    if (ctx.message.text) {
+      await bot.telegram.sendMessage(OWNER_ID, header + "\n" + ctx.message.text);
+    } 
+    // إذا كانت أي نوع آخر (صورة، فيديو، الخ)
+    else {
+      const originalCaption = ctx.message.caption || '';
+      await ctx.copyMessage(OWNER_ID, {
+        caption: header + originalCaption
+      });
+    }
     
     return ctx.reply('🚀 تم إرسال رسالتك، سأرد عليك في القريب العاجل.');
   }
