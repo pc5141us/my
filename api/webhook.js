@@ -206,11 +206,12 @@ bot.on('message', async (ctx) => {
       if (idMatch && (replyToText.includes('اكتب رسالتك') || replyToText.includes('رسالة من:'))) {
         const targetId = idMatch[1] || idMatch[2];
         const nameMatch = replyToText.match(/المستخدم: (.+) \(ID:/) || replyToText.match(/رسالة من: (.+) \(ID:/);
-        const targetName = nameMatch ? nameMatch[1] : targetId;
+        // نضمن أن الاسم المستخدم في الأزرار هو الاسم النصي وليس الـ ID
+        let targetName = nameMatch ? nameMatch[1].trim() : 'المستخدِم';
 
         try {
           await bot.telegram.sendMessage(targetId, `💬 رسالة من حمدي:\n\n${messageText}`);
-          return ctx.reply(`✅ تم الإرسال للمستخدم: ${targetName}`, getUserControlKeyboard(targetName));
+          return ctx.reply(`✅ تم الإرسال بنجاح للمستخدم: ${targetName}`, getUserControlKeyboard(targetName));
         } catch (e) { return ctx.reply('❌ فشل الإرسال.'); }
       }
 
