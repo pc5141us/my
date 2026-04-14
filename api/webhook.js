@@ -44,12 +44,13 @@ const linksKeyboard = {
   }
 };
 
-function getUserControlKeyboard(id) {
+function getUserControlKeyboard(id, name) {
+  const safeName = name || 'المستخدِم';
   return {
     reply_markup: {
       keyboard: [
-        [{ text: `💬 مراسلة (${id})` }],
-        [{ text: `🚫 حظر (${id})` }, { text: `✅ فك الحظر (${id})` }],
+        [{ text: `💬 مراسلة (${safeName}) » ${id}` }],
+        [{ text: `🚫 حظر (${safeName}) » ${id}` }, { text: `✅ فك الحظر (${safeName}) » ${id}` }],
         [{ text: '👥 قائمة المستخدمين' }, { text: '⬅️ الرجوع للقائمة الرئيسية' }]
       ],
       resize_keyboard: true
@@ -123,30 +124,33 @@ bot.hears('👥 قائمة المستخدمين', async (ctx) => {
 // رصد اختيار مستخدم (Regex)
 bot.hears(/^👤 (.+) \((\d+)\)$/, (ctx) => {
   if (ctx.from.id.toString() !== OWNER_ID) return;
-  const name = ctx.match[1];
+  const name = ctx.match[1].trim();
   const id = ctx.match[2];
   const isBanned = bannedUsers.has(id);
-  ctx.reply(`🛠️ إدارة المستخدم: ${name}\nID: ${id}\nالحالة: ${isBanned ? '🔴 محظور' : '🟢 نشط'}`, getUserControlKeyboard(id));
+  ctx.reply(`🛠️ إدارة المستخدم: ${name}\nID: ${id}\nالحالة: ${isBanned ? '🔴 محظور' : '🟢 نشط'}`, getUserControlKeyboard(id, name));
 });
 
-bot.hears(/^🚫 حظر \((\d+)\)$/, (ctx) => {
+bot.hears(/^🚫 حظر \((.+)\) » (\d+)$/, (ctx) => {
   if (ctx.from.id.toString() !== OWNER_ID) return;
-  const id = ctx.match[1];
+  const name = ctx.match[1];
+  const id = ctx.match[2];
   bannedUsers.add(id);
-  ctx.reply(`✅ تم حظر المستخدم (ID: ${id})`, getUserControlKeyboard(id));
+  ctx.reply(`✅ تم حظر المستخدم: ${name}`, getUserControlKeyboard(id, name));
 });
 
-bot.hears(/^✅ فك الحظر \((\d+)\)$/, (ctx) => {
+bot.hears(/^✅ فك الحظر \((.+)\) » (\d+)$/, (ctx) => {
   if (ctx.from.id.toString() !== OWNER_ID) return;
-  const id = ctx.match[1];
+  const name = ctx.match[1];
+  const id = ctx.match[2];
   bannedUsers.delete(id);
-  ctx.reply(`✅ تم فك الحظر عن (ID: ${id})`, getUserControlKeyboard(id));
+  ctx.reply(`✅ تم فك الحظر عن: ${name}`, getUserControlKeyboard(id, name));
 });
 
-bot.hears(/^💬 مراسلة \((\d+)\)$/, (ctx) => {
+bot.hears(/^💬 مراسلة \((.+)\) » (\d+)$/, (ctx) => {
   if (ctx.from.id.toString() !== OWNER_ID) return;
-  const id = ctx.match[1];
-  ctx.reply(`📝 اكتب رسالتك للمستخدم (ID: ${id}):`, { reply_markup: { force_reply: true } });
+  const name = ctx.match[1];
+  const id = ctx.match[2];
+  ctx.reply(`📝 اكتب رسالتك للمستخدم: ${name} (ID: ${id}):`, { reply_markup: { force_reply: true } });
 });
 
 // --- تعديل بيانات الموقع (أوامر الأزرار) ---
@@ -183,9 +187,12 @@ bot.on('message', async (ctx) => {
       const idMatch = replyToText.match(/\(ID: (\d+)\)$|\(ID: (\d+)\):/);
       if (idMatch && (replyToText.includes('اكتب رسالتك') || replyToText.includes('رسالة من:'))) {
         const targetId = idMatch[1] || idMatch[2];
+        const nameMatch = replyToText.match(/المستخدم: (.+) \(ID:/) || replyToText.match(/رسالة من: (.+) \(ID:/);
+        const targetName = nameMatch ? nameMatch[1] : targetId;
+        
         try {
           await bot.telegram.sendMessage(targetId, `💬 رسالة من حمدي:\n\n${messageText}`);
-          return ctx.reply(`✅ تم الإرسال للمستخدم (${targetId})`);
+          return ctx.reply(`✅ تم الإرسال للمستخدم: ${targetName}`, getUserControlKeyboard(targetId, targetName));
         } catch (e) { return ctx.reply('❌ فشل الإرسال.'); }
       }
 
