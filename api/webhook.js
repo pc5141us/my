@@ -113,7 +113,8 @@ bot.hears('👥 قائمة المستخدمين', async (ctx) => {
 
     const keyboard = [];
     for (let i = 0; i < users.length; i += 3) {
-      const row = users.slice(i, i + 3).map(u => ({ text: `👤 ${u.name} (${u.id})` }));
+      // نستخدم \u200b لإخفاء الـ ID برمجياً لكي لا يراه المستخدم
+      const row = users.slice(i, i + 3).map(u => ({ text: `👤 ${u.name}\u200b${u.id}` }));
       keyboard.push(row);
     }
     keyboard.push([{ text: '⬅️ الرجوع للقائمة الرئيسية' }]);
@@ -124,8 +125,8 @@ bot.hears('👥 قائمة المستخدمين', async (ctx) => {
   } catch (e) { ctx.reply('❌ فشل جلب القائمة.'); }
 });
 
-// رصد اختيار مستخدم (Regex)
-bot.hears(/^👤 (.+) \((\d+)\)$/, (ctx) => {
+// رصد اختيار مستخدم (Regex مع الـ ID المخفي)
+bot.hears(/^👤 (.+)\u200b(\d+)$/, (ctx) => {
   if (ctx.from.id.toString() !== OWNER_ID) return;
   const name = ctx.match[1].trim();
   const id = ctx.match[2];
