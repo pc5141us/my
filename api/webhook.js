@@ -217,17 +217,19 @@ bot.on('message', async (ctx) => {
       const idMatch = replyToText.match(/\(ID: (\d+)\)$|\(ID: (\d+)\):|ID: (\d+)\n/);
       if (idMatch && (replyToText.includes('اكتب رسالتك') || replyToText.includes('رسالة من:') || replyToText.includes('إدارة المستخدم:'))) {
         const targetId = idMatch[1] || idMatch[2] || idMatch[3];
-        // رادار استخراج الاسم بأكثر من صيغة
-        const nameMatch = replyToText.match(/المستخدم: (.+) \(ID:/) || 
-                          replyToText.match(/رسالة من: (.+) \(ID:/) ||
-                          replyToText.match(/إدارة المستخدم: (.+)\n/);
-                          
-        let targetName = nameMatch ? nameMatch[1].trim() : 'المستخدِم';
-
+        
         try {
+          // جلب البيانات من الشيت للتأكد من الاسم بدقة ومحاربة كلمة "المستخدِم"
+          const response = await fetch(`${SCRIPT_URL}?action=getUsers`);
+          const users = await response.json();
+          const targetUser = users.find(u => u.id.toString() === targetId.toString());
+          const targetName = targetUser ? targetUser.name : 'المستخدِم';
+
           await bot.telegram.sendMessage(targetId, `💬 رسالة من حمدي:\n\n${messageText}`);
           return ctx.reply(`✅ تم الإرسال بنجاح للمستخدم: ${targetName}`, getUserControlKeyboard(targetName));
-        } catch (e) { return ctx.reply('❌ فشل الإرسال.'); }
+        } catch (e) { 
+          return ctx.reply(`❌ فشل الإرسال (تأكد من الـ ID: ${targetId}).`); 
+        }
       }
 
       if (replyToText === PROMPT_BROADCAST) {
