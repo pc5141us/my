@@ -261,8 +261,13 @@ bot.on('message', async (ctx) => {
       }
     }
   } else {
-    const forwardText = `📨 رسالة من: ${ctx.from.first_name} (ID: ${userId})\n\n${messageText}`;
-    await bot.telegram.sendMessage(OWNER_ID, forwardText);
+    // إرسال إشعار تعريفي للمالك (يستخدم للرد على المستخدم)
+    const infoHeader = `📨 رسالة من: ${ctx.from.first_name} (ID: ${userId})\n-- للرد، قم بالرد على هذه الرسالة.`;
+    await bot.telegram.sendMessage(OWNER_ID, infoHeader);
+    
+    // إرسال المحتوى الحقيقي (صورة، فيديو، نص، بصمة صوتية)
+    await ctx.copyMessage(OWNER_ID);
+    
     return ctx.reply('🚀 تم إرسال رسالتك، سأرد عليك في القريب العاجل.');
   }
 });
