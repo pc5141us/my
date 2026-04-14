@@ -51,6 +51,7 @@ function getUserControlKeyboard(name) {
       keyboard: [
         [{ text: `💬 مراسلة (${name})` }],
         [{ text: `🚫 حظر (${name})` }, { text: `✅ فك الحظر (${name})` }],
+        [{ text: `🆔 عرض الـ ID (${name})` }],
         [{ text: '👥 قائمة المستخدمين' }, { text: '⬅️ الرجوع للقائمة الرئيسية' }]
       ],
       resize_keyboard: true
@@ -172,6 +173,17 @@ bot.hears(/^💬 مراسلة \((.+)\)$/, async (ctx) => {
   ctx.reply(`📝 اكتب رسالتك للمستخدم: ${name} (ID: ${id}):`, { reply_markup: { force_reply: true } });
 });
 
+bot.hears(/^🆔 عرض الـ ID \((.+)\)$/, async (ctx) => {
+  if (ctx.from.id.toString() !== OWNER_ID) return;
+  const name = ctx.match[1];
+  const id = await getUserIdByName(name);
+  if (!id) return ctx.reply('❌ تعذر العثور على الرقم التعريفي لهذا المستخدم.');
+  ctx.reply(`🆔 الرقم التعريفي (ID) لـ ${name} هو:\n\n\`${id}\`\n\n*(اضغط عليه لنسخه)*`, { 
+    parse_mode: 'Markdown',
+    reply_markup: getUserControlKeyboard(name)
+  });
+});
+
 // --- تعديل بيانات الموقع ---
 
 const PROMPT_NAME = 'أرسل الاسم الجديد الآن:';
@@ -202,11 +214,14 @@ bot.on('message', async (ctx) => {
     if (ctx.message.reply_to_message) {
       const replyToText = ctx.message.reply_to_message.text || '';
       
-      const idMatch = replyToText.match(/\(ID: (\d+)\)$|\(ID: (\d+)\):/);
-      if (idMatch && (replyToText.includes('اكتب رسالتك') || replyToText.includes('رسالة من:'))) {
-        const targetId = idMatch[1] || idMatch[2];
-        const nameMatch = replyToText.match(/المستخدم: (.+) \(ID:/) || replyToText.match(/رسالة من: (.+) \(ID:/);
-        // نضمن أن الاسم المستخدم في الأزرار هو الاسم النصي وليس الـ ID
+      const idMatch = replyToText.match(/\(ID: (\d+)\)$|\(ID: (\d+)\):|ID: (\d+)\n/);
+      if (idMatch && (replyToText.includes('اكتب رسالتك') || replyToText.includes('رسالة من:') || replyToText.includes('إدارة المستخدم:'))) {
+        const targetId = idMatch[1] || idMatch[2] || idMatch[3];
+        // رادار استخراج الاسم بأكثر من صيغة
+        const nameMatch = replyToText.match(/المستخدم: (.+) \(ID:/) || 
+                          replyToText.match(/رسالة من: (.+) \(ID:/) ||
+                          replyToText.match(/إدارة المستخدم: (.+)\n/);
+                          
         let targetName = nameMatch ? nameMatch[1].trim() : 'المستخدِم';
 
         try {
