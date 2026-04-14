@@ -194,14 +194,14 @@ const PROMPT_IG = 'أرسل رابط إنستجرام الجديد:';
 const PROMPT_TG = 'أرسل رابط تليجرام الجديد:';
 const PROMPT_BROADCAST = 'أرسل رسالة البرودكاست للكل:';
 
-bot.hears('👤 تعديل الاسم', (ctx) => ctx.reply(PROMPT_NAME, { reply_markup: { force_reply: true } }));
-bot.hears('📝 تعديل الوصف', (ctx) => ctx.reply(PROMPT_BIO, { reply_markup: { force_reply: true } }));
+bot.hears('👤 تعديل الاسم', (ctx) => ctx.reply(`${PROMPT_NAME}\n\n(للتنفيذ قم بعمل رد Reply على هذه الرسالة.. للإلغاء اضغط على أي زر آخر بالأسفل)`, adminKeyboard));
+bot.hears('📝 تعديل الوصف', (ctx) => ctx.reply(`${PROMPT_BIO}\n\n(للتنفيذ قم بعمل رد Reply على هذه الرسالة.. للإلغاء اضغط على أي زر آخر بالأسفل)`, adminKeyboard));
 bot.hears('🌐 روابط السوشيال ميديا', (ctx) => ctx.reply('اختر الرابط لتعديله:', linksKeyboard));
-bot.hears('🔵 فيسبوك', (ctx) => ctx.reply(PROMPT_FB, { reply_markup: { force_reply: true } }));
-bot.hears('🟢 واتساب', (ctx) => ctx.reply(PROMPT_WA, { reply_markup: { force_reply: true } }));
-bot.hears('🟣 إنستجرام', (ctx) => ctx.reply(PROMPT_IG, { reply_markup: { force_reply: true } }));
-bot.hears('🔵 تليجرام', (ctx) => ctx.reply(PROMPT_TG, { reply_markup: { force_reply: true } }));
-bot.hears('📢 إرسال جماعي', (ctx) => ctx.reply(PROMPT_BROADCAST, { reply_markup: { force_reply: true } }));
+bot.hears('🔵 فيسبوك', (ctx) => ctx.reply(`${PROMPT_FB}\n\n(للتنفيذ قم بعمل رد Reply على هذه الرسالة.. للإلغاء اضغط على زر الرجوع)`, linksKeyboard));
+bot.hears('🟢 واتساب', (ctx) => ctx.reply(`${PROMPT_WA}\n\n(للتنفيذ قم بعمل رد Reply على هذه الرسالة.. للإلغاء اضغط على زر الرجوع)`, linksKeyboard));
+bot.hears('🟣 إنستجرام', (ctx) => ctx.reply(`${PROMPT_IG}\n\n(للتنفيذ قم بعمل رد Reply على هذه الرسالة.. للإلغاء اضغط على زر الرجوع)`, linksKeyboard));
+bot.hears('🔵 تليجرام', (ctx) => ctx.reply(`${PROMPT_TG}\n\n(للتنفيذ قم بعمل رد Reply على هذه الرسالة.. للإلغاء اضغط على زر الرجوع)`, linksKeyboard));
+bot.hears('📢 إرسال جماعي', (ctx) => ctx.reply(`${PROMPT_BROADCAST}\n\n(للتنفيذ قم بعمل رد Reply على هذه الرسالة.. للإلغاء اضغط على زر الرجوع)`, usersManagementKeyboard));
 bot.hears('⬅️ الرجوع للقائمة الرئيسية', (ctx) => ctx.reply('الرئيسية', adminKeyboard));
 
 // --- معالجة الرسائل الواردة ---
@@ -212,12 +212,26 @@ bot.on('message', async (ctx) => {
 
   if (userId === OWNER_ID) {
     if (ctx.message.reply_to_message) {
-      // نتحقق من النص أو الوصف (Caption) في حال كانت الرسالة صورة أو فيديو
       const replyToText = ctx.message.reply_to_message.text || ctx.message.reply_to_message.caption || '';
       
-      // رادار الـ ID الجديد (أكثر مرونة للبحث في كل الرسالة)
+      // إذا كان النص المرسل هو اسم أحد الأزرار، نلغي العملية فوراً
+      if (messageText && (
+        messageText.includes('الرجوع') || 
+        messageText.includes('تعديل') || 
+        messageText.includes('روابط') || 
+        messageText.includes('إدارة') || 
+        messageText.includes('قائمة')
+      )) return;
+
+      // رادار الـ ID (يبحث عن الرقم بعد كلمة ID في أي مكان)
       const idMatch = replyToText.match(/ID: (\d+)/);
-      if (idMatch && (replyToText.includes('اكتب رسالتك') || replyToText.includes('رسالة من:') || replyToText.includes('إدارة المستخدم:'))) {
+      // الكلمات المفتاحية التي تدل على أن هذه الرسالة قابلة للرد (إشعار جديد أو لوحة تحكم)
+      const isManageMessage = replyToText.includes('من:') || 
+                              replyToText.includes('رسالة من:') || 
+                              replyToText.includes('إدارة المستخدم:') ||
+                              replyToText.includes('اكتب رسالتك');
+
+      if (idMatch && isManageMessage) {
         const targetId = idMatch[1];
         
         try {
