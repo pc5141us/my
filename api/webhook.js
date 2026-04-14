@@ -214,16 +214,17 @@ bot.on('message', async (ctx) => {
     if (ctx.message.reply_to_message) {
       const replyToText = ctx.message.reply_to_message.text || '';
       
-      const idMatch = replyToText.match(/\(ID: (\d+)\)$|\(ID: (\d+)\):|ID: (\d+)\n/);
+      // رادار الـ ID الجديد (أكثر مرونة للبحث في كل الرسالة)
+      const idMatch = replyToText.match(/ID: (\d+)/);
       if (idMatch && (replyToText.includes('اكتب رسالتك') || replyToText.includes('رسالة من:') || replyToText.includes('إدارة المستخدم:'))) {
-        const targetId = idMatch[1] || idMatch[2] || idMatch[3];
+        const targetId = idMatch[1];
         
         try {
           // جلب البيانات من الشيت للتأكد من الاسم بدقة ومحاربة كلمة "المستخدِم"
           const response = await fetch(`${SCRIPT_URL}?action=getUsers`);
           const users = await response.json();
           const targetUser = users.find(u => u.id.toString() === targetId.toString());
-          const targetName = targetUser ? targetUser.name : 'المستخدِم';
+          const targetName = targetUser ? targetUser.name : targetId;
 
           // إرسال رد المالك (نسخ الرسالة كما هي: نص، صورة، فيديو، الخ)
           await ctx.copyMessage(targetId);
