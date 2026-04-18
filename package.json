@@ -1,16 +1,14 @@
 {
-  "name": "doma-designs-marketplace",
+  "name": "doma-ai-links",
   "version": "1.0.0",
-  "description": "Showcase and sell web designs linked to Google Sheets and Telegram Bot",
-  "main": "index.html",
+  "private": true,
   "scripts": {
     "start": "serve .",
-    "build": "mkdir -p public && cp index.html style.css script.js vercel.json public/ || true"
+    "dev": "vercel dev"
   },
   "dependencies": {
-    "@vercel/kv": "^1.0.1"
-  },
-  "devDependencies": {
-    "serve": "^14.2.0"
+    "telegraf": "^4.16.3",
+    "googleapis": "^126.0.0",
+    "dotenv": "^16.4.5"
   }
 }
