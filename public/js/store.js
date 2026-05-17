@@ -33,6 +33,36 @@ const Store = {
         announcement: { text: '', buttonText: '', buttonUrl: '' }
     },
 
+    // ── Instant restore from localStorage (zero network, zero wait) ──
+    restoreFromCache() {
+        try {
+            const cached = localStorage.getItem('v3_data_cache');
+            if (cached) {
+                const { users, lessons, coupons, announcement, ts } = JSON.parse(cached);
+                // Only use cache if less than 5 minutes old
+                if (Date.now() - ts < 5 * 60 * 1000) {
+                    if (users) this.state.users = users;
+                    if (lessons) this.state.lessons = lessons;
+                    if (coupons) this.state.coupons = coupons;
+                    if (announcement) this.state.announcement = announcement;
+                    console.log('⚡ Restored from cache instantly');
+                }
+            }
+        } catch (e) { /* ignore cache errors */ }
+
+        // Always restore current user from localStorage
+        try {
+            const u = localStorage.getItem('v3_user');
+            if (u) this.state.currentUser = JSON.parse(u);
+        } catch (e) { this.state.currentUser = null; }
+
+        // Restore scroll positions
+        try {
+            const s = localStorage.getItem('v3_scroll');
+            if (s) this.state.scrollPositions = JSON.parse(s);
+        } catch (e) { this.state.scrollPositions = {}; }
+    },
+
     async broadcastBot(message) {
         try {
             await fetch('/api/webhook', {
@@ -49,7 +79,7 @@ const Store = {
 
     async init() {
         try {
-            // Load data from Server
+            // Load fresh data from Server
             const data = await DB.getData();
 
             if (data) {
@@ -57,10 +87,22 @@ const Store = {
                 this.state.lessons = (data.lessons || []).sort((a, b) => (b.id || 0) - (a.id || 0));
                 this.state.coupons = (data.coupons || []).sort((a, b) => (b.id || 0) - (a.id || 0));
                 if (data.announcement) this.state.announcement = data.announcement;
+
+                // Save to localStorage cache for instant next load
+                try {
+                    localStorage.setItem('v3_data_cache', JSON.stringify({
+                        users: this.state.users,
+                        lessons: this.state.lessons,
+                        coupons: this.state.coupons,
+                        announcement: this.state.announcement,
+                        ts: Date.now()
+                    }));
+                } catch (e) { /* storage quota exceeded - ignore */ }
             }
         } catch (e) {
-            console.log('Server offline, using empty state');
+            console.log('⚠️ Server fetch failed, using cached state');
         }
+
 
         // Session user stays in localStorage for convenience
         this.state.currentUser = JSON.parse(localStorage.getItem('v3_user')) || null;

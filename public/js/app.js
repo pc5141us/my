@@ -30,32 +30,36 @@ const App = {
 
     async init() {
         console.log('🚀 Doma AI v2.9.6 Initializing...');
-        await Store.init();
 
-        // Inject Modals Container
+        // ── Step 1: Restore state from localStorage INSTANTLY (no network) ──
+        Store.restoreFromCache();
+
+        // ── Step 2: Inject modals and render the UI immediately ──
         const modalsContainer = document.getElementById('v3-modals-container');
         if (modalsContainer) modalsContainer.innerHTML = UI.modals(Store.state);
 
-        // Register Back Button Handler
         window.addEventListener('popstate', (e) => this.handlePopState(e));
 
-        // Initial Navigation
         const hash = window.location.hash.replace('#', '');
         const savedView = localStorage.getItem('v3_view') || 'landing';
-
         if (hash) {
             const [view, id] = hash.split('-');
-            this.navigate(view, id || null, true, true); // replace initial state
+            this.navigate(view, id || null, true, true);
         } else {
-            this.navigate(savedView, null, true, true); // replace initial state
+            this.navigate(savedView, null, true, true);
         }
 
-        this.render(true); // Ensure scroll restoration on refresh
-
+        this.render(true);
         this.setupListeners();
         this.setupNumberConversion();
         this.setupInactivityTracking();
         this.startTimer();
+
+        // ── Step 3: Load fresh data in background (non-blocking) ──
+        Store.init().then(() => {
+            // Silently update UI if data changed
+            this.smartRender();
+        }).catch(e => console.warn('Background data load error:', e));
     },
 
     setupInactivityTracking() {
