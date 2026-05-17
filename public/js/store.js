@@ -97,19 +97,39 @@ const Store = {
             });
         });
 
-        // Background Polling Fallback (Fast 1s poll for instant conversations/announcements)
-        setInterval(() => {
-            this.refreshData().then(({ changed, type }) => {
-                if (changed && window.App) {
-                    if (type === 'announcement') {
-                        console.log('⚡ High-Speed Sync: Announcement Updated');
-                        window.App.refreshAnnouncementOnly();
-                    } else {
-                        window.App.smartRender();
+        // Background Polling - every 15 seconds (was 1s which caused heavy lag)
+        // Slows to 30s when tab is hidden to save resources
+        let _pollInterval = 15000;
+        const _startPolling = () => {
+            clearInterval(window._pollTimer);
+            window._pollTimer = setInterval(() => {
+                this.refreshData().then(({ changed, type }) => {
+                    if (changed && window.App) {
+                        if (type === 'announcement') {
+                            window.App.refreshAnnouncementOnly();
+                        } else {
+                            window.App.smartRender();
+                        }
                     }
-                }
-            });
-        }, 1000);
+                });
+            }, _pollInterval);
+        };
+
+        // Pause/slow polling when tab is not visible
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                _pollInterval = 60000; // 1 min when hidden
+            } else {
+                _pollInterval = 15000; // 15s when visible
+                // Refresh immediately when user comes back
+                this.refreshData().then(({ changed }) => {
+                    if (changed && window.App) window.App.smartRender();
+                });
+            }
+            _startPolling();
+        });
+
+        _startPolling();
 
         // Start heartbeat if user already logged in
         if (this.state.currentUser && this.state.currentUser.role !== 'admin') {
@@ -455,66 +475,37 @@ const Store = {
             if (user.status === 'banned') return { success: false, message: 'تم حظر حسابك. يرجى التواصل مع الإدارة.' };
             if (user.status === 'pending') return { success: false, message: 'حسابك قيد المراجعة. يرجى انتظار تفعيل الإدارة.' };
 
-            // Generate Session Token
-            const token = Date.now() + '_' + Math.random().toString(36).substr(2);
-
-            // Fetch IP Address
-            const ip = await this.getIP();
-
-            // Update DB with token and IP (Try full update first)
-            let updates = {
-                session_token: token,
-                last_active: new Date().toISOString(),
-                ip_address: ip
-            };
-
-            let updateRes = await DB.updateUser(user.id, updates);
-
-            if (!updateRes.success) {
-                console.warn('⚠️ Full login sync failed, trying essential fields only...');
-                // Fallback: Try without ip_address in case column is missing
-                const { ip_address, ...essentialUpdates } = updates;
-                updateRes = await DB.updateUser(user.id, essentialUpdates);
-
-                if (!updateRes.success) {
-                    console.error('❌ Login Sync Failed:', updateRes.error);
-                    const errorMsg = updateRes.error?.message || 'Unknown Error';
-                    alert(`⚠️ فشل التزامن: ${errorMsg}\nتأكد من وجود عامودي last_active و session_token في Supabase.`);
-                } else {
-                    console.log('✅ Essential login sync succeeded (ip_address column likely missing)');
-                }
-            }
-
-            // Sync local state (Update local even if DB fails for visual feedback)
-            const nowIso = updates.last_active;
-
-            // Critical: Update the user object with new session data
+            // Update local state immediately (no need to wait for DB)
+            const nowIso = new Date().toISOString();
             user.session_token = token;
-            user.ip_address = ip;
             user.last_active = nowIso;
 
             this.state.currentUser = user;
             localStorage.setItem('v3_user', JSON.stringify(user));
-            localStorage.setItem('v3_session_token', token); // Local unique token
+            localStorage.setItem('v3_session_token', token);
 
-            // Also update the matching user in the list for immediate UI feedback
             const userInList = this.state.users.find(x => x.id === user.id);
             if (userInList) {
                 userInList.last_active = nowIso;
                 userInList.session_token = token;
-                if (updates.ip_address) userInList.ip_address = updates.ip_address;
             }
 
             // Broadcast to all other tabs/windows to logout
             if (sessionBroadcast) {
-                sessionBroadcast.postMessage({
-                    type: 'LOGOUT_OTHER_SESSIONS',
-                    userId: user.id
-                });
+                sessionBroadcast.postMessage({ type: 'LOGOUT_OTHER_SESSIONS', userId: user.id });
             }
 
-            // Start heartbeat to keep last_active updated and maintain online status
+            // Start heartbeat
             this.startHeartbeat();
+
+            // Fire DB sync in background - don't block login
+            this.getIP().then(ip => {
+                DB.updateUser(user.id, {
+                    session_token: token,
+                    last_active: nowIso,
+                    ip_address: ip
+                }).catch(e => console.warn('Login sync error (non-critical):', e));
+            });
 
             return { success: true, role: user.role };
         }
@@ -692,7 +683,7 @@ window.Store = Store;
 
 // Heartbeat utilities (keeps last_active updated and online count accurate)
 Store._heartbeatTimer = null;
-Store.startHeartbeat = function (intervalMs = 20000) {
+Store.startHeartbeat = function (intervalMs = 60000) {
     this.stopHeartbeat();
     if (!this.state.currentUser || this.state.currentUser.role === 'admin') return;
 
