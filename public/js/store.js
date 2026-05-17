@@ -704,16 +704,40 @@ const Store = {
                     const data = JSON.parse(e.target.result);
                     // Minimal validation
                     if (data.users && data.lessons) {
-                        // WARNING: Replacing state on a remote Supabase DB is complex.
-                        // For now, we only update the local state for session preview.
-                        // A true migration tool would need to clear and re-insert into Supabase.
-                        this.state = { ...this.state, ...data };
-                        resolve({ success: true, msg: 'تم استيراد البيانات محلياً. للمزامنة الدائمة، يرجى التواصل مع الدعم.' });
+                        // Call DB.restoreData to restore on Google Sheets
+                        const res = await DB.restoreData({
+                            users: data.users || [],
+                            lessons: data.lessons || [],
+                            coupons: data.coupons || [],
+                            announcement: data.announcement || null
+                        });
+                        
+                        if (res && res.success) {
+                            // Update local state
+                            this.state.users = (data.users || []).filter(u => u.username !== 'ANNOUNCEMENT_DATA').sort((a, b) => (b.id || 0) - (a.id || 0));
+                            this.state.lessons = (data.lessons || []).sort((a, b) => (b.id || 0) - (a.id || 0));
+                            this.state.coupons = (data.coupons || []).sort((a, b) => (b.id || 0) - (a.id || 0));
+                            if (data.announcement) this.state.announcement = data.announcement;
+                            
+                            // Save to local cache
+                            localStorage.setItem('v3_data', JSON.stringify({
+                                users: this.state.users,
+                                lessons: this.state.lessons,
+                                coupons: this.state.coupons,
+                                announcement: this.state.announcement,
+                                ts: Date.now()
+                            }));
+                            
+                            resolve({ success: true, msg: 'تم استعادة النسخة الاحتياطية وتحديث قاعدة البيانات بنجاح!' });
+                        } else {
+                            reject({ success: false, msg: 'فشل رفع البيانات إلى Google Sheets' });
+                        }
                     } else {
-                        reject({ success: false, msg: 'ملف غير متوافق' });
+                        reject({ success: false, msg: 'ملف غير متوافق أو لا يحتوي على هيكل البيانات الصحيح' });
                     }
                 } catch (err) {
-                    reject({ success: false, msg: 'خطأ في قراءة الملف' });
+                    console.error('Import Error:', err);
+                    reject({ success: false, msg: 'خطأ في قراءة وتحليل ملف الجيسون' });
                 }
             };
             reader.readAsText(file);

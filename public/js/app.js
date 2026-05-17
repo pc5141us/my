@@ -1184,10 +1184,22 @@ const App = {
     },
 
     async handleImport(input) {
-        if (input.files[0] && await confirm('هل أنت متأكد؟ سيتم استبدال الداتا الحالية ببيانات الملف.')) {
-            const res = await Store.importData(input.files[0]);
-            if (res.success) location.reload();
-            else alert(res.msg);
+        if (input.files[0] && await confirm('هل أنت متأكد؟ سيتم استبدال الداتا الحالية ببيانات ملف النسخة الاحتياطية بالكامل.')) {
+            try {
+                this.showToast('جاري استعادة النسخة الاحتياطية... يرجى عدم إغلاق الصفحة.', 'sync');
+                const res = await Store.importData(input.files[0]);
+                if (res.success) {
+                    this.showToast('✅ تم استعادة البيانات بنجاح! جاري تحديث الصفحة...', 'check_circle');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    this.showToast('❌ ' + (res.msg || 'فشل استعادة البيانات'), 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                this.showToast('❌ حدث خطأ غير متوقع أثناء استعادة البيانات', 'error');
+            }
         }
     },
 
