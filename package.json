@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "serve .",
-    "dev": "vercel dev"
+    "dev": "vercel dev",
+    "bot": "node api/webhook.js"
   },
   "dependencies": {
     "telegraf": "^4.16.3",

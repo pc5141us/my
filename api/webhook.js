@@ -1,7 +1,7 @@
 const { Telegraf } = require('telegraf');
 
 // --- بياناتك المحفوظة ---
-const BOT_TOKEN = '8402726492:AAGLLp8_8wjBBUSA175XB2pM83xty2DmgCU';
+const BOT_TOKEN = '8402726492:AAHFEKocI5bEpi5Us9EHC8A4xtH3JvnSW1E';
 const OWNER_ID = '682572594';
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZ6Cdjn2WPM82EOrEZGUPrLXtE9Mt6UrfxrZPQngCiRB-4I6ewgsW7cRBxOONeugcv/exec';
 
@@ -304,3 +304,43 @@ module.exports = async (req, res) => {
     res.status(200).send('OK');
   } catch (err) { res.status(500).send('Error'); }
 };
+
+if (require.main === module) {
+  console.log('🤖 جاري التحضير لتشغيل بوت تليجرام...');
+
+  bot.catch((err, ctx) => {
+    console.error(`❌ خطأ تليجرام في ${ctx.updateType}:`, err);
+  });
+
+  async function startPolling() {
+    while (true) {
+      try {
+        await bot.telegram.deleteWebhook({ drop_pending_updates: true });
+        console.log('🚀 تم تشغيل بوت تليجرام بنجاح! البوت يعمل الآن ويستقبل الرسائل...');
+        await bot.launch({
+          allowedUpdates: ['message', 'callback_query']
+        });
+        console.log('🛑 تم إيقاف البوت.');
+        break;
+      } catch (err) {
+        const isConflict = err.code === 409 || 
+                           (err.response && err.response.error_code === 409) ||
+                           (err.message && String(err.message).includes('409'));
+        if (isConflict) {
+          console.log('⚠️ هناك اتصال آخر بالبوت حالياً، جاري إعادة المحاولة خلال 5 ثوانٍ...');
+          await new Promise(r => setTimeout(r, 5000));
+        } else {
+          console.error('❌ خطأ غير متوقع:', err.message || err);
+          await new Promise(r => setTimeout(r, 5000));
+        }
+      }
+    }
+  }
+
+  startPolling();
+
+  process.once('SIGINT', () => bot.stop('SIGINT'));
+  process.once('SIGTERM', () => bot.stop('SIGTERM'));
+}
+
+
